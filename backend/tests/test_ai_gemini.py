@@ -181,4 +181,21 @@ def test_rate_limit_without_retry_info_says_a_minute(monkeypatch, settings) -> N
     _install(monkeypatch, [_api_error(429)])
     with pytest.raises(ApiError) as caught:
         _run(settings)
-    assert "in about a minute" in caught.value.message
+    assert "in a minute or two" in caught.value.message
+
+
+def test_long_rate_limit_is_reported_in_minutes(monkeypatch, settings) -> None:
+    limited = errors.APIError(
+        429,
+        {
+            "error": {
+                "details": [
+                    {"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": "3185s"}
+                ]
+            }
+        },
+    )
+    _install(monkeypatch, [limited])
+    with pytest.raises(ApiError) as caught:
+        _run(settings)
+    assert "in about 54 minutes" in caught.value.message

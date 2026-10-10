@@ -81,6 +81,18 @@ def _retry_delay_seconds(exc: errors.APIError) -> int | None:
     return None
 
 
+def _rate_limit_message(exc: errors.APIError) -> str:
+    """Name the wait Google asks for; it can be seconds (per minute) or close to an hour."""
+    wait = _retry_delay_seconds(exc)
+    if wait is None:
+        when = "in a minute or two"
+    elif wait < 90:
+        when = f"in about {wait} seconds"
+    else:
+        when = f"in about {math.ceil(wait / 60)} minutes"
+    return f"Gemini (the AI) has reached its free usage limit. Press Try again {when}."
+
+
 def _provider_error(exc: Exception) -> ApiError:
     """Map SDK/transport failures to sanitized ApiErrors (no key, no raw provider body)."""
     if isinstance(exc, httpx.TimeoutException):
@@ -88,12 +100,7 @@ def _provider_error(exc: Exception) -> ApiError:
     if isinstance(exc, errors.APIError):
         logger.warning("Gemini call failed: HTTP %s %s", exc.code, exc.status)
         if exc.code == 429:
-            wait = _retry_delay_seconds(exc)
-            when = f"in about {wait} seconds" if wait else "in about a minute"
-            return ApiError(
-                ErrorCode.PROVIDER_RATE_LIMITED,
-                f"Gemini (the AI) reached its per-minute limit. Press Try again {when}.",
-            )
+            return ApiError(ErrorCode.PROVIDER_RATE_LIMITED, _rate_limit_message(exc))
         if exc.code in (504, 408):
             return ApiError(ErrorCode.PROVIDER_TIMEOUT, "The AI service timed out; try again.")
         if exc.code in (401, 403):
