@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "data": {
+    "summary": "Demo Alex talked about practicing guitar for a weekend show.",
+    "cue": "Ask Alex how the weekend guitar show went.",
+    "facts": [
+      {
+        "text": "Alex has a guitar show this weekend.",
+        "evidenceQuote": "I have a guitar show this weekend"
+      }
+    ]
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}

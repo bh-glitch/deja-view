@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "data": {
+    "intent": "introduction",
+    "displayName": "Alex",
+    "relationship": "teammate from the robotics club",
+    "nameEvidence": "I'm Alex",
+    "relationshipEvidence": "I'm your teammate from the robotics club"
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}

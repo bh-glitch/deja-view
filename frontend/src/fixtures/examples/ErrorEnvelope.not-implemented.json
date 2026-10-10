@@ -1,0 +1,9 @@
+{
+  "ok": false,
+  "error": {
+    "code": "NOT_IMPLEMENTED",
+    "message": "Listing people is not implemented yet.",
+    "retryable": false
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}

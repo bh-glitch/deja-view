@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "data": {
+    "status": "multiple_faces",
+    "personId": null,
+    "similarity": null,
+    "box": null,
+    "frameWidth": 640,
+    "frameHeight": 480
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}

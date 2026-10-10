@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "data": {
+    "status": "no_face",
+    "personId": null,
+    "similarity": null,
+    "box": null,
+    "frameWidth": 640,
+    "frameHeight": 480
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}
