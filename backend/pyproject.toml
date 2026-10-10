@@ -31,6 +31,10 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"
+filterwarnings = [
+    # scikit-image deprecation inside InsightFace 2.1 alignment; harmless with locked versions.
+    "ignore:`estimate` is deprecated:FutureWarning:insightface.utils.face_align",
+]
 
 [tool.ruff]
 line-length = 100

@@ -47,6 +47,12 @@ Scope ([#1](https://github.com/bh-glitch/forget-not/issues/1)), inside Ishan's o
 Interface corrections found in Phase 1 are requested in the task issue and published
 by Bhavya before Phase 2 starts.
 
+## Bhavya — Phase 2 vision engine (started early, human decision 2026-10-10)
+
+Engine implemented on `bhavya/vision-integration` (see `docs/vision-validation.md`).
+`/api/vision/enrollment-sample` works end to end. `/api/vision/recognize` needs Arnav's
+`GalleryCache`/`load_gallery`. No contract changes.
+
 ## Blockers
 
 - Vansh waits until Phase 1 is released for him (human decision).

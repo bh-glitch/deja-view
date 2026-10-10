@@ -37,6 +37,26 @@ Notes:
 - The bundled 112×112 pre-aligned `Tom_Hanks_54745.png` produces no detection; inputs must
   be ordinary frames, not aligned crops.
 
+## Phase 2 engine — 2026-10-10 (Bhavya, branch `bhavya/vision-integration`)
+
+Implemented `decode_jpeg`, `validate_embedding`, `check_enrollment_coherence`,
+`match_gallery` and `InsightFaceEngine` (`load_face_engine`). Evidence:
+- Startup: model files checked against `models/manifest.json`; CPU-only providers asserted;
+  `get_feat` probe confirms 512 values. Load time about 0.5 s.
+- The engine runs the detector first and computes an embedding only for a single face; any
+  frame with 2+ faces returns `multiple_faces` without embeddings.
+- Real-weights tests (`backend/tests/test_vision_engine.py`, demo image only): group photo →
+  `multiple_faces` / `MULTIPLE_FACES`; blank → `no_face` / `NO_FACE`; an enrolled crop's mirror
+  image → `matched` to the right person; matched only against another person, or with an empty
+  gallery → `unknown`.
+- HTTP `POST /api/vision/enrollment-sample` on a real uvicorn (single worker, M3 CPU), 640×480
+  single-face JPEG: 200 in 0.130–0.158 s over 6 requests.
+- `/api/vision/recognize` returns 501 until Arnav's `GalleryCache` lands (expected).
+
+Provisional thresholds (`backend/app/vision/thresholds.py`, uncalibrated): match ≥ 0.40 with
+a margin ≥ 0.08 over the second-best person; enrollment needs detection ≥ 0.65, a face ≥ 80 px,
+not touching the border, pairwise sample similarity ≥ 0.35, and similarity to the centroid ≥ 0.55.
+
 ## Still to do (Phase 2 / Phase 4, on the demo laptop with consenting teammates)
 - Calibrate the minimum similarity and the second-best-person margin from real enrollments.
 - Test enrolled returns, an unknown volunteer, multiple faces, face loss, and pose/lighting changes.
