@@ -18,8 +18,9 @@
     "license": "InsightFace library code is MIT. The pretrained buffalo_l weights are provided for NON-COMMERCIAL RESEARCH purposes only (https://github.com/deepinsight/insightface#license). Without a signed MODEL.LICENSE, InsightFace 2.1 treats packs as default non-commercial. Do not describe these weights as unrestricted or commercially licensed.",
     "checksumNote": "Checksums are observed from Bhavya's download and pin our copy; InsightFace does not publish official checksums for this asset.",
     "expectedEmbeddingDimension": 512,
-    "embeddingDimensionVerified": false,
+    "embeddingDimensionVerified": true,
     "runtime": "onnxruntime CPUExecutionProvider",
-    "recordedAt": "2026-10-10T18:28:47.035965Z"
+    "recordedAt": "2026-10-10T18:28:47.035965Z",
+    "embeddingVerification": "2026-10-10: w600k_r50.onnx normed_embedding shape (512,), float32, L2 norm 1.0 (docs/vision-validation.md)"
   }
 }
