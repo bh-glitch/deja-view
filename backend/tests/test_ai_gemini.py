@@ -51,6 +51,7 @@ def _install(monkeypatch, replies: list) -> FakeModels:
     models = FakeModels(replies)
     client = SimpleNamespace(aio=SimpleNamespace(models=models))
     monkeypatch.setattr(gemini, "_make_client", lambda settings: client)
+    monkeypatch.setattr(gemini, "OVERLOAD_RETRY_DELAY_S", 0.0)
     return models
 
 
@@ -119,7 +120,6 @@ def test_missing_key_is_not_configured(monkeypatch, tmp_path) -> None:
         (_api_error(400), "PROVIDER_ERROR", False),
         (_api_error(403), "PROVIDER_ERROR", False),
         (_api_error(404), "PROVIDER_ERROR", False),
-        (_api_error(500), "PROVIDER_ERROR", True),
         (_api_error(504), "PROVIDER_TIMEOUT", True),
         (httpx.ReadTimeout("slow"), "PROVIDER_TIMEOUT", True),
         (httpx.ConnectError("down"), "PROVIDER_ERROR", True),
@@ -135,3 +135,22 @@ def test_provider_errors_are_mapped_without_retry(
     assert caught.value.retryable is retryable
     assert FAKE_KEY not in caught.value.message
     assert len(models.calls) == 1
+
+
+@pytest.mark.parametrize("status", [500, 503])
+def test_overload_is_retried_once_then_succeeds(monkeypatch, settings, status) -> None:
+    models = _install(
+        monkeypatch, [_api_error(status), '{"intent": "introduction", "displayName": "Demo Alex"}']
+    )
+    assert _run(settings) == Out(intent="introduction", displayName="Demo Alex")
+    assert len(models.calls) == 2
+
+
+def test_repeated_overload_fails_after_one_retry(monkeypatch, settings) -> None:
+    models = _install(monkeypatch, [_api_error(503), _api_error(503), "never used"])
+    with pytest.raises(ApiError) as caught:
+        _run(settings)
+    assert caught.value.code == "PROVIDER_ERROR"
+    assert caught.value.retryable is True
+    assert "overloaded" in caught.value.message
+    assert len(models.calls) == 2

@@ -16,6 +16,8 @@ export interface EnrollmentVoiceProps {
   onListen: () => void;
   onFinish: () => void;
   onCancel: () => void;
+  /** Re-send the already transcribed words to Gemini after a failed draft. */
+  onRetryDraft?: () => void;
 }
 
 const VOICE_DISCLOSURE =
@@ -60,11 +62,21 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
       )}
       {state.kind === "error" && (
         <p role="alert" className="text-red-700 dark:text-red-400">
+          {state.transcript ? `Heard “${state.transcript}”. ` : ""}
           {state.message}
         </p>
       )}
       {(state.kind === "idle" || state.kind === "heard" || state.kind === "no-name" || state.kind === "error") && (
-        <div>
+        <div className="flex gap-2">
+          {state.kind === "error" && state.transcript && voice.onRetryDraft && (
+            <button
+              type="button"
+              onClick={voice.onRetryDraft}
+              className="rounded-md bg-zinc-800 px-2 py-1 text-xs text-white"
+            >
+              Try again
+            </button>
+          )}
           <button
             type="button"
             onClick={voice.onListen}

@@ -155,6 +155,31 @@ describe("useVoiceIntroduction", () => {
     expect((result.current.state as { message: string }).message).toMatch(/busy/);
   });
 
+  it("keeps the transcript after a Gemini failure and retries without re-recording", async () => {
+    mocks.transcribeAudio.mockResolvedValue("Hi, I'm Demo Alex.");
+    mocks.draftIntroduction
+      .mockRejectedValueOnce(
+        new ApiClientError("PROVIDER_ERROR", "Google's AI service is temporarily overloaded; try again in a moment.", 502, true, null),
+      )
+      .mockResolvedValueOnce(introduction);
+    const { result } = renderHook(() => useVoiceIntroduction());
+    await act(() => result.current.listen());
+    await act(async () => {
+      result.current.finish();
+    });
+    await flush();
+    expect(result.current.state).toMatchObject({ kind: "error", transcript: "Hi, I'm Demo Alex." });
+    expect((result.current.state as { message: string }).message).toMatch(/overloaded/);
+
+    await act(async () => {
+      result.current.retryDraft();
+    });
+    await flush();
+    expect(result.current.state).toMatchObject({ kind: "heard", draft: { displayName: "Demo Alex" } });
+    expect(mocks.transcribeAudio).toHaveBeenCalledTimes(1);
+    expect(mocks.draftIntroduction).toHaveBeenCalledTimes(2);
+  });
+
   it("cancel discards the recording without any requests", async () => {
     const { result } = renderHook(() => useVoiceIntroduction());
     await act(() => result.current.listen());
@@ -230,6 +255,17 @@ describe("EnrollmentCard with voice", () => {
     expect(screen.getByText(/sent to ElevenLabs/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Listen again/ }));
     expect(voice.onListen).toHaveBeenCalled();
+  });
+
+  it("shows Try again after a failed draft that kept the transcript", () => {
+    const voice = {
+      ...voiceProps({ kind: "error", message: "Google's AI service is temporarily overloaded.", transcript: "Hi, I'm Demo Alex." }),
+      onRetryDraft: vi.fn(),
+    };
+    render(<EnrollmentCard state={naming} onSave={vi.fn()} onDismiss={vi.fn()} voice={voice} />);
+    expect(screen.getByRole("alert").textContent).toContain("Heard “Hi, I'm Demo Alex.”");
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(voice.onRetryDraft).toHaveBeenCalled();
   });
 
   it("toggles auto-listen", () => {

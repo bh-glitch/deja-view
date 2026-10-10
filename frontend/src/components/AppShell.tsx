@@ -261,6 +261,7 @@ export function AppShell() {
                 onListen: () => void voice.listen(),
                 onFinish: voice.finish,
                 onCancel: voice.cancel,
+                onRetryDraft: voice.retryDraft,
               }}
             />
             {!naming &&

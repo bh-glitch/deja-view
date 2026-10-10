@@ -22,7 +22,8 @@ export type VoiceIntroductionState =
   | { kind: "understanding"; transcript: string }
   | { kind: "heard"; transcript: string; draft: IntroductionDraft }
   | { kind: "no-name"; transcript: string | null; message: string }
-  | { kind: "error"; message: string };
+  /** `transcript` is kept when only the Gemini step failed, so it can be retried without re-recording. */
+  | { kind: "error"; message: string; transcript: string | null };
 
 export interface VoiceIntroduction {
   state: VoiceIntroductionState;
@@ -30,6 +31,8 @@ export interface VoiceIntroduction {
   listen: () => Promise<void>;
   /** Stop listening early and process what was said. */
   finish: () => void;
+  /** Re-send the kept transcript to Gemini after a failed draft (no new recording). */
+  retryDraft: () => void;
   /** Discard the recording/requests and return to idle. */
   cancel: () => void;
 }
@@ -42,6 +45,7 @@ export function describeVoiceError(error: unknown): string {
     if (error.code === "PROVIDER_NOT_CONFIGURED") return "Speech is not configured on the backend.";
     if (error.code === "PROVIDER_TIMEOUT") return "The speech service took too long. Listen again.";
     if (error.code === "NETWORK_ERROR") return "The backend is unreachable.";
+    if (error.code === "AI_OUTPUT_INVALID") return "The AI could not read a name from that. Try again or type it.";
     return error.message;
   }
   return "Something went wrong while listening.";
@@ -53,6 +57,24 @@ export function useVoiceIntroduction(): VoiceIntroduction {
   const phaseRef = useRef<Phase>("idle");
   const sawRecordingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  const draftFrom = useCallback(async (transcript: string, controller: AbortController) => {
+    setState({ kind: "understanding", transcript });
+    try {
+      const draft = await draftIntroduction(transcript, controller.signal);
+      if (controller.signal.aborted) return;
+      phaseRef.current = "idle";
+      if (draft.intent === "introduction" && draft.displayName) {
+        setState({ kind: "heard", transcript, draft });
+      } else {
+        setState({ kind: "no-name", transcript, message: "Didn't catch a name. Listen again or type it." });
+      }
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      phaseRef.current = "idle";
+      setState({ kind: "error", message: describeVoiceError(error), transcript });
+    }
+  }, []);
 
   const process = useCallback(async () => {
     if (phaseRef.current !== "listening") return;
@@ -78,27 +100,13 @@ export function useVoiceIntroduction(): VoiceIntroduction {
       if (error instanceof ApiClientError && (error.code === "EMPTY_TRANSCRIPT" || error.code === "EMPTY_AUDIO")) {
         setState({ kind: "no-name", transcript: null, message: "Didn't hear anything. Listen again or type the name." });
       } else {
-        setState({ kind: "error", message: describeVoiceError(error) });
+        setState({ kind: "error", message: describeVoiceError(error), transcript: null });
       }
       return;
     }
 
-    setState({ kind: "understanding", transcript });
-    try {
-      const draft = await draftIntroduction(transcript, controller.signal);
-      if (controller.signal.aborted) return;
-      phaseRef.current = "idle";
-      if (draft.intent === "introduction" && draft.displayName) {
-        setState({ kind: "heard", transcript, draft });
-      } else {
-        setState({ kind: "no-name", transcript, message: "Didn't catch a name. Listen again or type it." });
-      }
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      phaseRef.current = "idle";
-      setState({ kind: "error", message: describeVoiceError(error) });
-    }
-  }, [recorder]);
+    await draftFrom(transcript, controller);
+  }, [draftFrom, recorder]);
 
   const listen = useCallback(async () => {
     if (phaseRef.current !== "idle") return;
@@ -112,6 +120,15 @@ export function useVoiceIntroduction(): VoiceIntroduction {
   const finish = useCallback(() => {
     void process();
   }, [process]);
+
+  const retryDraft = useCallback(() => {
+    if (phaseRef.current !== "idle" || state.kind !== "error" || !state.transcript) return;
+    phaseRef.current = "processing";
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    void draftFrom(state.transcript, controller);
+  }, [draftFrom, state]);
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
@@ -131,7 +148,7 @@ export function useVoiceIntroduction(): VoiceIntroduction {
     } else if (recorderState === "error") {
       phaseRef.current = "idle";
       queueMicrotask(() =>
-        setState({ kind: "error", message: recorderError ?? "The microphone could not start." }),
+        setState({ kind: "error", message: recorderError ?? "The microphone could not start.", transcript: null }),
       );
     } else if (recorderState === "idle" && sawRecordingRef.current) {
       queueMicrotask(() => void process()); // the window ended on its own (auto-stop)
@@ -142,5 +159,5 @@ export function useVoiceIntroduction(): VoiceIntroduction {
 
   const view: VoiceIntroductionState =
     state.kind === "listening" ? { ...state, elapsedMs: recorder.elapsedMs } : state;
-  return { state: view, listen, finish, cancel };
+  return { state: view, listen, finish, retryDraft, cancel };
 }
