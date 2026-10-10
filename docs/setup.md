@@ -109,3 +109,8 @@ which proxies `/api`.
 There is no login: anyone on the same network can open the page and delete people. Prefer a
 phone hotspot, and stop `dev:lan` when done. Regenerate the certificate if the IP changes.
 `frontend/certificates/` is git-ignored.
+
+If the page loads but buttons do nothing and the dev server logs `Blocked cross-origin request ...
+from "<ip>"`, stop `dev:lan` (Ctrl+C) and start it again. Next.js 16.4's automatic restart after a
+`next.config.ts` change (for example after `git pull` or a branch switch) does not re-apply
+`allowedDevOrigins`; a full restart does.
