@@ -17,10 +17,17 @@ vi.mock("@/lib/audio/speech-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/audio/speech-client")>()),
   transcribeAudio: mocks.transcribeAudio,
 }));
+const LOCAL = { kind: "local" as const, model: "qwen3.5:4b-q4_K_M", label: "local AI (qwen3.5:4b, on this laptop)" };
 vi.mock("@/lib/api-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api-client")>()),
-  draftMemory: mocks.draftMemory,
   createConversation: mocks.createConversation,
+}));
+vi.mock("@/lib/audio/ai-drafts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/audio/ai-drafts")>()),
+  draftMemoryWithProvider: async (transcript: string, signal?: AbortSignal) => ({
+    draft: await mocks.draftMemory(transcript, signal),
+    provider: LOCAL,
+  }),
 }));
 
 class FakeMediaRecorder {
@@ -199,7 +206,7 @@ describe("ConversationPanel and IdentityCard", () => {
     const onSave = vi.fn();
     render(
       <ConversationPanel
-        state={{ kind: "review", person, transcript: TRANSCRIPT, draft, saving: false, error: null }}
+        state={{ kind: "review", person, transcript: TRANSCRIPT, draft, provider: LOCAL, saving: false, error: null }}
         onStop={vi.fn()}
         onRetryDraft={vi.fn()}
         onSave={onSave}
@@ -207,6 +214,7 @@ describe("ConversationPanel and IdentityCard", () => {
       />,
     );
     expect(screen.getByText(/we did the Demo Ridge trail/, { selector: "span" })).toBeTruthy();
+    expect(screen.getByText(/Drafted by local AI/)).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Reminder for next time"), { target: { value: "Ask about guitar." } });
     fireEvent.click(screen.getByRole("button", { name: "Save memory" }));
     expect(onSave).toHaveBeenCalledWith({ summary: draft.summary, cue: "Ask about guitar." });

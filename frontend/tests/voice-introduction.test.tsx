@@ -10,13 +10,19 @@ const mocks = vi.hoisted(() => ({
   draftIntroduction: vi.fn(),
 }));
 
+const LOCAL = { kind: "local" as const, model: "qwen3.5:4b-q4_K_M", label: "local AI (qwen3.5:4b, on this laptop)" };
+
 vi.mock("@/lib/audio/speech-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/audio/speech-client")>()),
   transcribeAudio: mocks.transcribeAudio,
 }));
-vi.mock("@/lib/api-client", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/api-client")>()),
-  draftIntroduction: mocks.draftIntroduction,
+// The hook calls draftIntroductionWithProvider; tests set the draft via mocks.draftIntroduction.
+vi.mock("@/lib/audio/ai-drafts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/audio/ai-drafts")>()),
+  draftIntroductionWithProvider: async (transcript: string, signal?: AbortSignal) => ({
+    draft: await mocks.draftIntroduction(transcript, signal),
+    provider: LOCAL,
+  }),
 }));
 
 class FakeMediaRecorder {
@@ -213,10 +219,11 @@ describe("EnrollmentCard with voice", () => {
         state={naming}
         onSave={onSave}
         onDismiss={vi.fn()}
-        voice={voiceProps({ kind: "heard", transcript: "Hi, I'm Demo Alex, Sam's cousin.", draft: introduction })}
+        voice={voiceProps({ kind: "heard", transcript: "Hi, I'm Demo Alex, Sam's cousin.", draft: introduction, provider: LOCAL })}
       />,
     );
     expect(screen.getByRole("heading").textContent).toBe("Save Demo Alex?");
+    expect(screen.getByText(/Found by local AI \(qwen3.5:4b, on this laptop\)/)).toBeTruthy();
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Demo Alex");
     expect((screen.getByLabelText("Relationship (optional)") as HTMLInputElement).value).toBe("Sam's cousin");
     expect(onSave).not.toHaveBeenCalled();
@@ -231,7 +238,7 @@ describe("EnrollmentCard with voice", () => {
         state={naming}
         onSave={onSave}
         onDismiss={vi.fn()}
-        voice={voiceProps({ kind: "heard", transcript: "I'm Demo Alex", draft: introduction })}
+        voice={voiceProps({ kind: "heard", transcript: "I'm Demo Alex", draft: introduction, provider: LOCAL })}
       />,
     );
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Demo Alexa" } });
@@ -254,7 +261,7 @@ describe("EnrollmentCard with voice", () => {
     const voice = voiceProps({ kind: "no-name", transcript: "Hello there", message: "Didn't catch a name. Listen again or type it." });
     render(<EnrollmentCard state={naming} onSave={vi.fn()} onDismiss={vi.fn()} voice={voice} />);
     expect(screen.getByText(/Didn't catch a name/)).toBeTruthy();
-    expect(screen.getByText(/sent to ElevenLabs/)).toBeTruthy();
+    expect(screen.getByText(/sent to ElevenLabs/).textContent).not.toMatch(/Gemini/);
     fireEvent.click(screen.getByRole("button", { name: /Listen again/ }));
     expect(voice.onListen).toHaveBeenCalled();
   });

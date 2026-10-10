@@ -100,7 +100,7 @@ def test_route_returns_draft_and_saves_nothing(monkeypatch, client) -> None:
         assert schema is MemoryOutput
         return _out()
 
-    monkeypatch.setattr(memory.gemini, "generate_structured", fake_generate)
+    monkeypatch.setattr(memory.llm, "generate_structured", fake_generate)
     response = client.post("/api/ai/memory", json={"transcript": TRANSCRIPT})
     assert response.status_code == 200, response.text
     data = MemoryDraftResponse.model_validate(response.json()).data
@@ -113,7 +113,7 @@ def test_route_reports_nothing_memorable(monkeypatch, client) -> None:
     async def fake_generate(settings, system_instruction, transcript, schema):
         return _out(hasMemorableContent=False, summary="", cue="", facts=[])
 
-    monkeypatch.setattr(memory.gemini, "generate_structured", fake_generate)
+    monkeypatch.setattr(memory.llm, "generate_structured", fake_generate)
     response = client.post("/api/ai/memory", json={"transcript": "uh, hi"})
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "EMPTY_TRANSCRIPT"

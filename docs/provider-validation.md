@@ -118,3 +118,39 @@ Gemini returned **HTTP 429 `RESOURCE_EXHAUSTED`** four times and **HTTP 504
 minute, not per day. The 429 message now gives Google's `RetryInfo` delay, and the UI's
 **Try again** resends the kept transcript without re-recording. Raising the limit needs a
 paid (billing-enabled) Gemini tier, which is a human decision; nothing was upgraded.
+
+## Local AI drafts with Ollama — 2026-10-10 (Vansh)
+
+**Human decision (Vansh):** the free Gemini key returned 429 with a `RetryInfo` delay of
+~3185 s (about 53 minutes), so it was not only a per-minute limit. AI drafts now run on a
+local model by default on the demo laptop (`AI_PROVIDER=ollama`). Gemini stays selectable
+with `AI_PROVIDER=gemini`, and the UI labels which AI wrote each draft (`X-AI-Provider` header).
+
+Ollama Cloud was considered and rejected: its free plan is "starter usage credits" for
+"a smaller set of starter models", pay-as-you-go after that ([pricing](https://ollama.com/pricing)).
+The same page says "Running models on your own hardware is always unlimited."
+
+Setup (Apple M3, 16 GB): Ollama 0.40.2 (`brew install ollama`, server on `127.0.0.1:11434`),
+`ollama pull qwen3.5:4b-q4_K_M` (3.3 GB). The default `qwen3.5:4b` tag on macOS resolves to an
+MLX `nvfp4` build that returns **HTTP 501 "structured output is unavailable"**, so use the
+GGUF `*-q4_K_M` tags.
+
+Benchmark: the backend's own prompts, schemas and grounding checks; 11 fictional introductions
+(including a friend's name, quoted speech, a question, and a prompt-injection attempt) and
+3 conversations; `think=false`, temperature 0; face recognition idle.
+
+| Model | Names | Relationships | Introduction latency | Memory latency | Notes |
+|---|---|---|---|---|---|
+| `qwen3.5:4b-q4_K_M` | **11/11** | 10/11 ("neighbor" for "your neighbor") | 2.9–4.0 s | 10.9–12.3 s | One memory cue said "your daughter" for the speaker's daughter |
+| `qwen3.5:9b-q4_K_M` | 11/11 | 10/11 (gave Kai Mia's "sister") | 7.8–14.2 s | 32–37 s | Better cues, too slow |
+| `gemini-3.8-flash` | — | — | — | — | All 14 calls 429 (quota exhausted before the run) |
+
+Both local models rejected every non-self-introduction and ignored the injection attempt.
+Through the app (`/api/ai/*` via the Next.js proxy, header `X-AI-Provider: ollama:qwen3.5:4b-q4_K_M`):
+- Introduction "Hi, my name is Bhavya. I am Ishan's grandfather…" → `Bhavya` / `Ishan's
+  grandfather`, 7.2 s (first call includes model load).
+- Memory (hiking/guitar chat) → "You both love hiking; you bought new boots and plan to go
+  together next month. You also play guitar.", 3 quoted facts, 11.4 s.
+
+Every memory draft is reviewed and editable before it is saved, which covers occasional
+attribution mistakes.

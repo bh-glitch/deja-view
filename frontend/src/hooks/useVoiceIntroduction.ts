@@ -4,13 +4,14 @@
  * see docs/decisions.md "Auto-listen enrollment").
  *
  * listen() opens ONE bounded window (8 s by default) -> ElevenLabs transcription ->
- * Gemini introduction draft. It never saves anything: the draft only prefills the
+ * introduction draft by the backend's configured AI (local Qwen or Gemini). It never saves anything: the draft only prefills the
  * confirmation card, and the user still taps Save.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { ApiClientError, draftIntroduction, type IntroductionDraft } from "@/lib/api-client";
+import { ApiClientError, type IntroductionDraft } from "@/lib/api-client";
+import { type AiProvider, draftIntroductionWithProvider } from "@/lib/audio/ai-drafts";
 import { transcribeAudio } from "@/lib/audio/speech-client";
 
 export const INTRODUCTION_WINDOW_MS = 8000;
@@ -20,7 +21,7 @@ export type VoiceIntroductionState =
   | { kind: "listening"; elapsedMs: number; limitMs: number }
   | { kind: "transcribing" }
   | { kind: "understanding"; transcript: string }
-  | { kind: "heard"; transcript: string; draft: IntroductionDraft }
+  | { kind: "heard"; transcript: string; draft: IntroductionDraft; provider: AiProvider }
   | { kind: "no-name"; transcript: string | null; message: string }
   /** `transcript` is kept when only the Gemini step failed, so it can be retried without re-recording. */
   | { kind: "error"; message: string; transcript: string | null };
@@ -62,11 +63,11 @@ export function useVoiceIntroduction(): VoiceIntroduction {
   const draftFrom = useCallback(async (transcript: string, controller: AbortController) => {
     setState({ kind: "understanding", transcript });
     try {
-      const draft = await draftIntroduction(transcript, controller.signal);
+      const { draft, provider } = await draftIntroductionWithProvider(transcript, controller.signal);
       if (controller.signal.aborted) return;
       phaseRef.current = "idle";
       if (draft.intent === "introduction" && draft.displayName) {
-        setState({ kind: "heard", transcript, draft });
+        setState({ kind: "heard", transcript, draft, provider });
       } else {
         setState({ kind: "no-name", transcript, message: "Didn't catch a name. Listen again or type it." });
       }

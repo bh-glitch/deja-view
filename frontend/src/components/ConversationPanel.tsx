@@ -7,12 +7,14 @@ import { useState } from "react";
 
 import { MAX_CUE_CHARS, MAX_SUMMARY_CHARS, type ConversationState } from "@/hooks/useConversationMemory";
 import type { MemoryDraft } from "@/lib/api-client";
+import type { AiProvider } from "@/lib/audio/ai-drafts";
 
 const DISCLOSURE =
-  "Conversation audio is sent to ElevenLabs for transcription, and the text to Gemini to draft the reminder.";
+  "Conversation audio is sent to ElevenLabs for transcription. The reminder is drafted by the AI shown with each draft (local AI keeps the text on this laptop).";
 
 function ReviewForm({
   draft,
+  provider,
   transcript,
   saving,
   error,
@@ -20,6 +22,7 @@ function ReviewForm({
   onDiscard,
 }: {
   draft: MemoryDraft;
+  provider: AiProvider;
   transcript: string;
   saving: boolean;
   error: string | null;
@@ -67,6 +70,7 @@ function ReviewForm({
           ))}
         </ul>
       )}
+      <p className="text-xs text-zinc-500">Drafted by {provider.label}. Edit anything before saving.</p>
       <details className="text-xs text-zinc-500">
         <summary>Transcript</summary>
         <p className="mt-1 whitespace-pre-wrap">{transcript}</p>
@@ -144,6 +148,7 @@ export function ConversationPanel({
       {state.kind === "review" && (
         <ReviewForm
           draft={state.draft}
+          provider={state.provider}
           transcript={state.transcript}
           saving={state.saving}
           error={state.error}

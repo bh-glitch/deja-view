@@ -4,7 +4,7 @@
  *
  * An explicit button press records one conversation (at most 60 s) for a person who is
  * locked when recording starts: camera changes never reassign it. The audio goes to
- * ElevenLabs, the transcript to Gemini for a grounded draft, and the user reviews and
+ * ElevenLabs, the transcript to the configured AI (local Qwen or Gemini) for a grounded draft, and the user reviews and
  * edits the draft. Only "Save" stores it (createConversation, idempotent by conversationId).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,10 +14,10 @@ import { describeVoiceError } from "@/hooks/useVoiceIntroduction";
 import {
   ApiClientError,
   createConversation,
-  draftMemory,
   type MemoryDraft,
   type Person,
 } from "@/lib/api-client";
+import { type AiProvider, draftMemoryWithProvider } from "@/lib/audio/ai-drafts";
 import { MAX_RECORDING_MS } from "@/lib/audio/recorder";
 import { transcribeAudio } from "@/lib/audio/speech-client";
 
@@ -29,7 +29,15 @@ export type ConversationState =
   | { kind: "recording"; person: Person; elapsedMs: number; limitMs: number }
   | { kind: "transcribing"; person: Person }
   | { kind: "drafting"; person: Person; transcript: string }
-  | { kind: "review"; person: Person; transcript: string; draft: MemoryDraft; saving: boolean; error: string | null }
+  | {
+      kind: "review";
+      person: Person;
+      transcript: string;
+      draft: MemoryDraft;
+      provider: AiProvider;
+      saving: boolean;
+      error: string | null;
+    }
   | { kind: "failed"; person: Person; transcript: string | null; message: string; canRetryDraft: boolean }
   | { kind: "saved"; person: Person; cue: string };
 
@@ -66,10 +74,10 @@ export function useConversationMemory(onSaved: (personId: string) => void): Conv
   const draftFrom = useCallback(async (session: Session, transcript: string, controller: AbortController) => {
     setState({ kind: "drafting", person: session.person, transcript });
     try {
-      const draft = await draftMemory(transcript, controller.signal);
+      const { draft, provider } = await draftMemoryWithProvider(transcript, controller.signal);
       if (controller.signal.aborted) return;
       phaseRef.current = "idle";
-      setState({ kind: "review", person: session.person, transcript, draft, saving: false, error: null });
+      setState({ kind: "review", person: session.person, transcript, draft, provider, saving: false, error: null });
     } catch (error) {
       if (controller.signal.aborted) return;
       phaseRef.current = "idle";

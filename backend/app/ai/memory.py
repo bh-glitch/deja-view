@@ -17,7 +17,7 @@ from app.contracts import (
     MemoryDraft,
     MemoryFact,
 )
-from app.providers import gemini
+from app.providers import llm
 
 SYSTEM_INSTRUCTION = f"""\
 The app user has face blindness. They just had a short conversation with a familiar person,
@@ -89,7 +89,5 @@ def ground_memory(transcript: str, output: MemoryOutput) -> MemoryDraft:
 
 async def draft_memory(settings: Settings, transcript: str) -> MemoryDraft:
     """Summarize supported details only; every evidenceQuote is a literal transcript substring."""
-    output = await gemini.generate_structured(
-        settings, SYSTEM_INSTRUCTION, transcript, MemoryOutput
-    )
+    output = await llm.generate_structured(settings, SYSTEM_INSTRUCTION, transcript, MemoryOutput)
     return ground_memory(transcript, output)

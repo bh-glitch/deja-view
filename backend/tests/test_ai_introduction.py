@@ -133,7 +133,7 @@ def test_route_returns_grounded_draft_and_saves_nothing(monkeypatch, client) -> 
         seen.append(transcript)
         return _out(displayName="Demo Alex", nameEvidence="I'm Demo Alex")
 
-    monkeypatch.setattr(introduction.gemini, "generate_structured", fake_generate)
+    monkeypatch.setattr(introduction.llm, "generate_structured", fake_generate)
     people_before = client.get("/api/people").json()
     response = client.post("/api/ai/introduction", json={"transcript": "  Hi, I'm Demo Alex.  "})
     assert response.status_code == 200, response.text

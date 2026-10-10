@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     elevenlabs_stt_model: str = "scribe_v2"
     elevenlabs_tts_model: str = "eleven_flash_v2_5"
     elevenlabs_voice_id: str = ""
+    # AI drafts (human decision 2026-10-10): "ollama" runs a local model with no quota and
+    # keeps transcripts on the laptop; "gemini" uses GEMINI_API_KEY. Default stays "gemini"
+    # so tests and fresh clones never call a local server by accident.
+    ai_provider: Literal["gemini", "ollama"] = "gemini"
+    ollama_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = "qwen3.5:4b-q4_K_M"
 
     @field_validator("database_path", "insightface_root", mode="after")
     @classmethod

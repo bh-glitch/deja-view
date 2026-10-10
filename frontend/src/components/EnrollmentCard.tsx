@@ -21,7 +21,7 @@ export interface EnrollmentVoiceProps {
 }
 
 const VOICE_DISCLOSURE =
-  "Introduction audio is sent to ElevenLabs for transcription, and the text to Gemini to find the name. Face images are never sent.";
+  "Introduction audio is sent to ElevenLabs for transcription. The name is found by the AI shown with each draft (local AI keeps the text on this laptop). Face images are never sent.";
 
 function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
   const { state } = voice;
@@ -51,7 +51,8 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
       )}
       {state.kind === "heard" && (
         <p className="text-emerald-800 dark:text-emerald-300">
-          Heard “{state.draft.nameEvidence ?? state.transcript}”. Check the name below, then save.
+          Heard “{state.draft.nameEvidence ?? state.transcript}”. Check the name below, then save.{" "}
+          <span className="text-xs text-zinc-500">Found by {state.provider.label}.</span>
         </p>
       )}
       {state.kind === "no-name" && (

@@ -15,7 +15,7 @@ from app.contracts import (
     IntroductionDraft,
     IntroductionIntent,
 )
-from app.providers import gemini
+from app.providers import llm
 
 SYSTEM_INSTRUCTION = """\
 A new visitor has walked up to the app user, and a short recording was transcribed.
@@ -94,7 +94,7 @@ def ground_introduction(transcript: str, output: IntroductionOutput) -> Introduc
 
 async def draft_introduction(settings: Settings, transcript: str) -> IntroductionDraft:
     """Extract an explicit self-introduction; evidence must occur in the transcript."""
-    output = await gemini.generate_structured(
+    output = await llm.generate_structured(
         settings, SYSTEM_INSTRUCTION, transcript, IntroductionOutput
     )
     return ground_introduction(transcript, output)
