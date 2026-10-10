@@ -9,6 +9,8 @@ from app.config import Settings
 from app.contracts import (
     MAX_AUDIO_BYTES,
     REQUEST_ID_HEADER,
+    ApiError,
+    ErrorCode,
     SpeakRequest,
     TranscriptPayload,
     TranscriptResponse,
@@ -28,6 +30,9 @@ async def transcribe(
     audio: UploadFile = File(description="Browser recording, <= 2 MB / 60 s"),
     settings: Settings = Depends(get_app_settings),
 ) -> TranscriptResponse:
+    # A zero-byte recording is "nothing heard", not a malformed request.
+    if audio.size == 0:
+        raise ApiError(ErrorCode.EMPTY_AUDIO, "The recording is empty.")
     data = await read_bounded_upload(audio, MAX_AUDIO_BYTES, field="audio")
     text = await elevenlabs.transcribe_audio(
         settings,
@@ -35,6 +40,8 @@ async def transcribe(
         audio.filename or "recording",
         audio.content_type or "application/octet-stream",
     )
+    if not text:
+        raise ApiError(ErrorCode.EMPTY_TRANSCRIPT, "No speech was recognized; try again.")
     return TranscriptResponse(
         data=TranscriptPayload(transcript=text), request_id=request_id(request)
     )
