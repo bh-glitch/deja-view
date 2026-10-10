@@ -79,3 +79,33 @@ No paid subscription was started or upgraded.
 2. Gemini quota/tier: check in AI Studio.
 
 Failures observed and the user-facing recovery state are recorded with the Phase 2 provider code.
+
+## Phase 2 measurements — 2026-10-10 (Vansh)
+
+Run against the real APIs with fictional lines only; each call was made once, with no retries.
+
+### Gemini thinking level (`gemini-3.8-flash`, google-genai 2.29.0)
+
+| Thinking level | Result | Latency |
+|---|---|---|
+| `MINIMAL` | **HTTP 400** `INVALID_ARGUMENT`: "Thinking level MINIMAL is not supported for this model." | 0.2 s |
+| `LOW` (3 calls) | Correct name; `thoughts_token_count` = none | 4.4 s, 2.7 s, 4.0 s |
+| Not set (default, 2 calls) | Correct name; 90 and 66 thought tokens | 3.5 s, 3.3 s |
+
+`LOW` is the lowest level this model accepts. Its timings overlap with the default, so most
+of the delay is the model call itself rather than thinking. The provider uses `LOW` because
+it spends no thinking tokens. The model was not changed.
+
+**Rate limit observed:** the 3rd default call (about the 9th Gemini call of the day, the 7th
+within ~25 s) returned **HTTP 429 `RESOURCE_EXHAUSTED`** ("You exceeded your current quota").
+A single call a few minutes later succeeded, so this looks like a per-minute limit on the
+key's tier. The app maps it to `PROVIDER_RATE_LIMITED` (retryable); it never retries
+automatically. The exact limits are still to be checked in AI Studio.
+
+### Endpoint checks (real calls through the Next.js proxy)
+
+| Endpoint | Input | Result |
+|---|---|---|
+| `POST /api/audio/transcribe` | The synthetic MP3 from Phase 1 (E4) | **200**, transcript "This is a forget not test. Demo Alex is your cousin. You talked about tea", 0.68 s |
+| `POST /api/audio/transcribe` | Zero-byte upload | **422 `EMPTY_AUDIO`** (no provider call) |
+| `POST /api/ai/introduction` | "Hey, nice to meet you! My name is Demo Alex, I am Sam's cousin." | **200**, `intent=introduction`, `displayName="Demo Alex"`, `relationship="Sam's cousin"`, both evidence spans literal; 3.4 s |
