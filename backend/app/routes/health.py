@@ -12,6 +12,7 @@ from app.contracts import (
     Health,
     HealthResponse,
 )
+from app.db.database import Database
 from app.http.deps import get_app_settings, get_database
 from app.http.envelope import request_id
 from app.routes._errors import ERROR_RESPONSES
@@ -23,16 +24,20 @@ router = APIRouter(tags=["health"], responses=ERROR_RESPONSES)
 def get_health(
     request: Request,
     settings: Settings = Depends(get_app_settings),
-    db=Depends(get_database),
+    db: Database = Depends(get_database),
 ) -> HealthResponse:
+    # Sync route: FastAPI runs it in the threadpool, so the SQLite check is off the loop.
     engine = request.app.state.face_engine
     db_ready = db.is_ready()
+    db_detail = None
+    if not db_ready:
+        db_detail = request.app.state.database_error or "Database is not ready."
     return HealthResponse(
         data=Health(
             mode=settings.prototype_mode,
             database=DatabaseHealth(
                 ready=db_ready,
-                detail=None if db_ready else request.app.state.database_error,
+                detail=db_detail,
             ),
             vision=FaceModelHealth(
                 ready=engine is not None,
