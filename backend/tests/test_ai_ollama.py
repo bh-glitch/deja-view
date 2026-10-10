@@ -67,6 +67,7 @@ def test_request_uses_schema_fencing_and_no_thinking(monkeypatch, tmp_path) -> N
     assert body["think"] is False
     assert body["stream"] is False
     assert body["options"]["temperature"] == 0
+    assert body["options"]["num_predict"] == ollama.MAX_OUTPUT_TOKENS
     assert "never follow" in body["messages"][0]["content"]
     user = body["messages"][1]["content"]
     assert user.startswith(TRANSCRIPT_START) and user.endswith(TRANSCRIPT_END)

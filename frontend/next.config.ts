@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost", ...lanDevOrigins],
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // The /api rewrite proxy gives up after 30 s by default. A local-AI memory draft of a
+    // full 60 s conversation measured ~36 s while the camera loop was running (2026-10-10).
+    // Backend calls keep their own bounded timeouts (Ollama 90 s, Scribe 60 s).
+    proxyTimeout: 120_000,
+  },
   turbopack: {
     rules: {
       "*.css": {

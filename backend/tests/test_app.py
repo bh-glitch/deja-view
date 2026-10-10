@@ -36,14 +36,21 @@ def test_validation_errors_use_envelope(client) -> None:
 @pytest.mark.parametrize(
     ("method", "path", "kwargs", "status", "code"),
     [
-        ("post", "/api/ai/introduction", {"json": {"transcript": "hi"}}, 501, "NOT_IMPLEMENTED"),
+        # Implemented speech/AI routes fail explicitly without credentials (tests have none).
+        (
+            "post",
+            "/api/ai/introduction",
+            {"json": {"transcript": "hi"}},
+            503,
+            "PROVIDER_NOT_CONFIGURED",
+        ),
         ("post", "/api/audio/speak", {"json": {"text": "hi"}}, 501, "NOT_IMPLEMENTED"),
         (
             "post",
             "/api/audio/transcribe",
             {"files": {"audio": ("a.webm", b"x", "audio/webm")}},
-            501,
-            "NOT_IMPLEMENTED",
+            503,
+            "PROVIDER_NOT_CONFIGURED",
         ),
         (
             "post",

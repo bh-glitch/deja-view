@@ -19,22 +19,30 @@ from app.contracts import (
 )
 from app.providers import llm
 
+# Short outputs on purpose: generation time dominates on a local model (a 60 s chat took
+# ~28 s with a 500-character summary; see docs/provider-validation.md).
+SUMMARY_TARGET_CHARS = 250
+FACT_TARGET_CHARS = 100
+QUOTE_TARGET_CHARS = 120
+
 SYSTEM_INSTRUCTION = f"""\
 The app user has face blindness. They just had a short conversation with a familiar person,
-and it was transcribed (speakers are not labeled). Write what will help the user recognize
-this person and pick up the conversation the next time they meet.
+and it was transcribed. Speakers are NOT labeled, so you do not know who said what.
+Write what will help the user recognize this person and pick up the conversation next time.
 
 cue: one or two short sentences (at most {MAX_CUE_CHARS} characters) addressed to the user,
-for example "Last time you talked about her trip to Lisbon. You both love jazz." Prefer
+for example "Last time you talked about a trip to Lisbon and a shared love of jazz." Prefer
 concrete topics, plans, news, and interests you both share. It must be a hint about what
 was said, never a guess about who the person is.
-summary: a neutral summary of the conversation (at most {MAX_SUMMARY_CHARS} characters).
-facts: up to {MAX_FACTS} memorable details. Each has text (at most {MAX_FACT_CHARS}
-characters) and evidenceQuote, a span copied character-for-character from the transcript
-that supports it.
+summary: a brief neutral summary, at most {SUMMARY_TARGET_CHARS} characters.
+facts: up to {MAX_FACTS} memorable details. Each text is at most {FACT_TARGET_CHARS}
+characters. Each evidenceQuote is a short span (at most {QUOTE_TARGET_CHARS} characters)
+copied character-for-character from the transcript that supports it.
 
 Use only what the transcript says. Never invent names, relationships, feelings or details.
-When it is unclear who said something, use neutral wording ("you talked about ...").
+Because speakers are unlabeled, never write "your X" or "her X" about who owns something or
+who said it; use neutral wording such as "a daughter starting college", "they", or
+"you talked about".
 hasMemorableContent: false when there is nothing worth remembering (silence, noise, only
 greetings, or unintelligible speech); then leave summary and cue empty and facts empty."""
 

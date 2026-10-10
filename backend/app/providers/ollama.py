@@ -30,6 +30,7 @@ ModelT = TypeVar("ModelT", bound=BaseModel)
 # on an M3 (measured 2026-10-10, see docs/provider-validation.md).
 TIMEOUT = httpx.Timeout(90.0, connect=5.0)
 KEEP_ALIVE = "30m"
+MAX_OUTPUT_TOKENS = 700
 
 # Tests replace this with httpx.MockTransport; None means the real local server.
 _transport: httpx.AsyncBaseTransport | None = None
@@ -79,7 +80,8 @@ async def generate_structured(
                 "stream": False,
                 "think": False,
                 "keep_alive": KEEP_ALIVE,
-                "options": {"temperature": 0},
+                # Bounded output: our largest draft (memory) fits in ~400 tokens.
+                "options": {"temperature": 0, "num_predict": MAX_OUTPUT_TOKENS},
             }
             try:
                 response = await client.post("/api/chat", json=body)
