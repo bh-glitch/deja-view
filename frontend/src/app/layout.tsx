@@ -9,7 +9,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    // suppressHydrationWarning: browser extensions may add attributes to <html> before React loads.
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

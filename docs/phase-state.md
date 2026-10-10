@@ -52,8 +52,8 @@ by Bhavya before Phase 2 starts.
 | Owner | Status |
 |---|---|
 | Arnav | **Merged** (PR #6 via #7): SQLite, people/conversations, health, gallery cache |
-| Bhavya | **Merged** (PR #7): vision engine. The end-to-end save → recognize → delete HTTP test passes |
-| Ishan | **Released:** Phase 2 UI, including auto-listen enrollment (`docs/decisions.md`). Uses real vision and storage; speech is a placeholder until Vansh lands |
+| Bhavya | **Merged** (PR #7): vision engine. Auto-enrollment UI (typed name until speech lands), stable identity, live people list with delete, verified in real Chrome with a fake camera |
+| Ishan | **Paused** (human decision): Bhavya took over stable identity, auto-enrollment, people list/delete. Next: UI simplification (fewer buttons) on top of that merge |
 | Vansh | Phase 1 provider checks in progress, then Phase 2 (recorder `start({ maxDurationMs })`, STT, introduction/memory drafts, TTS) |
 
 ## Bhavya — Phase 2 vision engine (started early, human decision 2026-10-10)

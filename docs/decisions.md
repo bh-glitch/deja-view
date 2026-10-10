@@ -100,3 +100,11 @@ explicit button press.
 
 Frontend interface change: `useAudioRecorder().start(options?: { maxDurationMs?: number })`
 (Vansh implements; Ishan calls it with 8000 for auto-listen).
+
+### Implementation status (2026-10-10)
+Bhavya implemented the trigger, capture, confirm, cooldown and stable-identity parts in
+`frontend/src/lib/identity-tracker.ts`, `hooks/useAutoEnrollment.ts`, `components/EnrollmentCard.tsx`
+and the `AppShell` controller (constants: 3 stable matches, 4 steady unknown frames, 4 target / 3 minimum
+samples, 30 s cooldown). **Not yet implemented:** the 8 s listening window, voice name prefill, the
+auto-listen toggle and the provider disclosure text. They need Vansh's recorder/STT/introduction; until
+then the name is typed into the same confirm card. These files return to Ishan's ownership after merge.
