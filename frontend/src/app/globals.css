@@ -22,3 +22,25 @@ body {
   color: var(--foreground);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+
+/* Face tag entrance on the camera overlay. */
+@keyframes tag-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-tag-in {
+  animation: tag-in 260ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-tag-in {
+    animation: none;
+  }
+}
