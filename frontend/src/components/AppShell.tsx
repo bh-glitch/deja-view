@@ -172,13 +172,22 @@ export function AppShell() {
     lastResult && !naming
       ? tracker.tracks.map((track) => {
           const known = track.stableId ? details[track.stableId] : undefined;
-          return {
+          const base = {
             key: track.trackId,
             box: track.box,
             frameWidth: lastResult.frameWidth,
             frameHeight: lastResult.frameHeight,
-            label: known ? known.person.displayName : track.stableId ? "…" : "Unknown",
-            tone: track.stableId ? "known" : "unknown",
+          };
+          if (!track.stableId) return { ...base, kind: "unknown" as const };
+          if (!known) return { ...base, kind: "pending" as const, personId: track.stableId };
+          return {
+            ...base,
+            kind: "known" as const,
+            personId: known.person.id,
+            name: known.person.displayName,
+            relationship: known.person.relationship,
+            cue: known.latestCue,
+            cueAt: known.conversations[0]?.endedAt ?? null,
           };
         })
       : [];
