@@ -3,6 +3,8 @@
  * Single-page controller (Ishan Phase 1a; Bhavya 2026-10-10 by human decision):
  * camera -> recognition loop -> stable identity, auto-enrollment of a steady unknown
  * face, live people list with delete, and the recognized person's latest cue.
+ * Voice introduction (Vansh, human-approved 2026-10-10): after capture, one 8 s listening
+ * window prefills the name via ElevenLabs STT + Gemini; the user still taps Save.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -14,6 +16,7 @@ import { PeopleList } from "@/components/PeopleList";
 import { useAutoEnrollment } from "@/hooks/useAutoEnrollment";
 import { useCamera } from "@/hooks/useCamera";
 import { useRecognitionLoop } from "@/hooks/useRecognitionLoop";
+import { useVoiceIntroduction } from "@/hooks/useVoiceIntroduction";
 import {
   ApiClientError,
   deletePerson,
@@ -85,6 +88,26 @@ export function AppShell() {
   const enrolling = enrollment.state.kind === "capturing";
   const naming = enrollment.state.kind === "naming";
 
+  // Auto-listen (default on): one bounded window per new face, never continuous.
+  const voice = useVoiceIntroduction();
+  const [autoListen, setAutoListen] = useState(true);
+  const autoListenRef = useRef(autoListen);
+  const changeAutoListen = useCallback((enabled: boolean) => {
+    autoListenRef.current = enabled;
+    setAutoListen(enabled);
+  }, []);
+
+  const startEnrollment = useCallback(async () => {
+    voice.cancel(); // never carry a previous visitor's introduction into this session
+    const ready = await enrollment.begin();
+    if (ready && autoListenRef.current) await voice.listen();
+  }, [enrollment, voice]);
+
+  const dismissEnrollment = useCallback(() => {
+    voice.cancel();
+    enrollment.dismiss();
+  }, [enrollment, voice]);
+
   const onResult = useCallback(
     (result: FrameResult) => {
       const next = trackFrame(trackerRef.current, result);
@@ -95,10 +118,10 @@ export function AppShell() {
       if (shouldStartEnrollment(next) && enrollment.canAutoStart()) {
         trackerRef.current = initialTracker;
         setTracker(initialTracker);
-        void enrollment.begin();
+        void startEnrollment();
       }
     },
-    [enrollment],
+    [enrollment, startEnrollment],
   );
 
   const { status } = useRecognitionLoop(camera.videoRef, {
@@ -140,18 +163,18 @@ export function AppShell() {
   // Stopping the camera ends any enrollment session and clears identity.
   const stopCamera = useCallback(() => {
     camera.stop();
-    if (enrollment.state.kind === "capturing" || enrollment.state.kind === "naming") enrollment.dismiss();
+    if (enrollment.state.kind === "capturing" || enrollment.state.kind === "naming") dismissEnrollment();
     resetIdentity();
     setLastResult(null);
-  }, [camera, enrollment, resetIdentity]);
+  }, [camera, dismissEnrollment, enrollment.state.kind, resetIdentity]);
 
   // A different camera shows a different scene: drop names and any enrollment in progress.
   const switchCamera = useCallback(async () => {
-    if (enrollment.state.kind === "capturing" || enrollment.state.kind === "naming") enrollment.dismiss();
+    if (enrollment.state.kind === "capturing" || enrollment.state.kind === "naming") dismissEnrollment();
     resetIdentity();
     setLastResult(null);
     await camera.switchFacing();
-  }, [camera, enrollment, resetIdentity]);
+  }, [camera, dismissEnrollment, enrollment.state.kind, resetIdentity]);
 
   const onDelete = useCallback(
     async (person: Person) => {
@@ -229,8 +252,16 @@ export function AppShell() {
               key={enrollment.state.kind}
               state={enrollment.state}
               onSave={(name, relationship) => void enrollment.save(name, relationship)}
-              onDismiss={enrollment.dismiss}
+              onDismiss={dismissEnrollment}
               mirrored={camera.facing === "user"}
+              voice={{
+                state: voice.state,
+                autoListen,
+                onAutoListenChange: changeAutoListen,
+                onListen: () => void voice.listen(),
+                onFinish: voice.finish,
+                onCancel: voice.cancel,
+              }}
             />
             {!naming &&
               (recognized.length > 0 ? (
