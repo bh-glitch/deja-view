@@ -1,30 +1,16 @@
 "use client";
 /** Camera preview with face-box overlay and status line (Ishan Phase 1a; Bhavya 2026-10-10). */
-import type { ReactNode, RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
+import { FaceTag, faceRect, type FaceOverlay } from "@/components/FaceTag";
 import type { CameraState } from "@/hooks/useCamera";
 import type { RecognitionStatus } from "@/hooks/useRecognitionLoop";
-import type { Box } from "@/lib/api-client";
+import { placeTags } from "@/lib/face-tag-layout";
 
-export interface FaceOverlay {
-  key: number;
-  box: Box;
-  frameWidth: number;
-  frameHeight: number;
-  label: string;
-  tone: "known" | "unknown";
-}
+/** Below this displayed video width (px), tags use the compact style (phones). */
+const COMPACT_WIDTH = 480;
 
-// Boxes are in unmirrored frame pixels; a mirrored (front-camera) preview flips x.
-function boxStyle({ box, frameWidth, frameHeight }: FaceOverlay, mirrored: boolean) {
-  const left = mirrored ? frameWidth - box.x - box.width : box.x;
-  return {
-    left: `${(left / frameWidth) * 100}%`,
-    top: `${(box.y / frameHeight) * 100}%`,
-    width: `${(box.width / frameWidth) * 100}%`,
-    height: `${(box.height / frameHeight) * 100}%`,
-  };
-}
+export type { FaceOverlay };
 
 function statusText(status: RecognitionStatus): string {
   if (status.kind === "waiting") return "Waiting for first frame…";
@@ -62,6 +48,17 @@ export function CameraPanel({
   children?: ReactNode;
 }) {
   const running = camera.kind === "live" || camera.kind === "starting";
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => setCompact(entry.contentRect.width < COMPACT_WIDTH));
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, []);
+  const rects = overlays.map((overlay) => faceRect(overlay, mirrored));
+  const placements = placeTags(rects, { compact });
 
   return (
     <section aria-labelledby="camera-heading" className="flex flex-col gap-3 rounded-lg border border-zinc-300 p-4 dark:border-zinc-700">
@@ -70,54 +67,48 @@ export function CameraPanel({
           Camera
         </h2>
         <div className="flex gap-2">
-        {camera.kind === "live" && canSwitch && (
-          <button type="button" onClick={onSwitch} className="rounded-md border border-zinc-400 px-3 py-1.5 text-sm font-medium">
-            Switch camera
+          {camera.kind === "live" && canSwitch && (
+            <button type="button" onClick={onSwitch} className="rounded-md border border-zinc-400 px-3 py-1.5 text-sm font-medium">
+              Switch camera
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={running ? onStop : onStart}
+            className={
+              running
+                ? "rounded-md border border-zinc-400 px-3 py-1.5 text-sm font-medium"
+                : "rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white"
+            }
+          >
+            {running ? "Stop camera" : "Start camera"}
           </button>
-        )}
-        <button
-          type="button"
-          onClick={running ? onStop : onStart}
-          className={
-            running
-              ? "rounded-md border border-zinc-400 px-3 py-1.5 text-sm font-medium"
-              : "rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white"
-          }
-        >
-          {running ? "Stop camera" : "Start camera"}
-        </button>
         </div>
       </div>
-      <div className="relative w-full overflow-hidden rounded-md bg-zinc-900">
-        <div className="relative">
+      <div className="relative w-full">
+        {/* Tags may extend past the video edge rather than being clipped. */}
+        <div ref={stageRef} className="relative">
           {/* Front-camera preview is mirrored like a selfie; captured frames never are. */}
           <video
             ref={videoRef}
             muted
             playsInline
-            className="block h-auto w-full"
+            className={`block h-auto w-full rounded-md bg-zinc-900 ${camera.kind === "live" ? "" : "hidden"}`}
             style={mirrored ? { transform: "scaleX(-1)" } : undefined}
           />
           {camera.kind === "live" &&
-            overlays.map((overlay) => (
-              <div
+            overlays.map((overlay, index) => (
+              <FaceTag
                 key={overlay.key}
-                aria-hidden
-                className={`absolute rounded-md border-2 ${overlay.tone === "known" ? "border-emerald-400" : "border-amber-400"}`}
-                style={boxStyle(overlay, mirrored)}
-              >
-                <span
-                  className={`absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold ${
-                    overlay.tone === "known" ? "bg-emerald-400 text-emerald-950" : "bg-amber-400 text-amber-950"
-                  }`}
-                >
-                  {overlay.label}
-                </span>
-              </div>
+                overlay={overlay}
+                rect={rects[index]}
+                placement={placements.get(overlay.key)!}
+                compact={compact}
+              />
             ))}
         </div>
         {camera.kind !== "live" && (
-          <p className="flex aspect-video items-center justify-center p-4 text-center text-sm text-zinc-300">
+          <p className="flex aspect-video items-center justify-center rounded-md bg-zinc-900 p-4 text-center text-sm text-zinc-300">
             {camera.kind === "starting" ? "Starting camera…" : "Camera is off"}
           </p>
         )}
