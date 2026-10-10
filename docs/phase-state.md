@@ -4,8 +4,8 @@ Maintained by Bhavya. No agent changes the phase on its own.
 
 | Field | Value |
 |---|---|
-| Current phase | **1 — Feasibility: released for Arnav and Bhavya** (Phase 1a merged) |
-| Next permitted work | Arnav and Bhavya: Phase 1 tasks below. Vansh: **wait** for release. Ishan: wait for next UI release |
+| Current phase | **1 — Feasibility: released for Arnav, Bhavya and Vansh** (Phase 1a merged) |
+| Next permitted work | Arnav, Bhavya, Vansh: Phase 1 tasks below. Ishan: wait for next UI release |
 | Approved base commit | `0f49c5e` on `main` (Phase 0 + Phase 1a UI shell, PR #5) |
 | Contract version | API 0.1.0 (`contracts/openapi.json`) |
 | Model | InsightFace 2.1, `buffalo_l` (checksums in `models/manifest.json`); embedding dimension **not yet verified** |
@@ -35,7 +35,7 @@ Scope ([#1](https://github.com/bh-glitch/forget-not/issues/1)), inside Ishan's o
 `test` and `build` pass, Ishan pushes `ishan/frontend`, opens a PR and merges it into
 `main` himself, then posts the merge commit in #1. Later phases go back to Bhavya merging.
 
-## Phase 1 — Feasibility (released for Arnav and Bhavya; Vansh pending)
+## Phase 1 — Feasibility (released for Arnav, Bhavya and Vansh)
 
 | Owner | Task | Handoff |
 |---|---|---|
@@ -49,5 +49,4 @@ by Bhavya before Phase 2 starts.
 
 ## Blockers
 
-- Vansh waits until Phase 1 is released for him (human decision).
 - Provider keys/credits are unverified (Vansh, Phase 1).
