@@ -49,3 +49,9 @@ blocker; do not silently substitute a model, and do not start a paid subscriptio
   explained, cancellation, track cleanup, never recording during playback.
 - AI routes never save people or conversations.
 - Mocked unit tests are kept separate from one recorded real call per provider.
+
+## Auto-listen enrollment (decision 2026-10-10, see `docs/decisions.md`)
+`useAudioRecorder().start(options?: { maxDurationMs?: number })`: auto-stop at the limit
+(default 60 s). Ishan uses 8 s windows for introductions. Never open the mic during TTS playback.
+`draftIntroduction` must return `intent="other"` with null name when no explicit
+self-introduction is heard; the UI then offers to retry.

@@ -10,7 +10,7 @@ Confirmed MVP decisions:
 
 - Start with a laptop webcam, one app user, and one visible visitor at a time.
 - The user explicitly enables the camera. Recognition then runs automatically.
-- The user presses a listening button, speaks naturally, and confirms the proposed person before enrollment.
+- When an unfamiliar face stays in view, the app captures face samples and opens one short, visible listening window for an introduction ("Hey, I'm Bhavya"). The user confirms the proposed person with one tap before enrollment. (Decision 2026-10-10; replaces the Listen-button trigger. See `docs/decisions.md`.)
 - Store 3–5 face embeddings per person, with their confirmed name and optional relationship.
 - Record conversations only after an explicit button press; review the generated reminder before saving.
 - Show the latest saved reminder when the person returns. New people show **No saved conversation yet**.
@@ -223,8 +223,8 @@ The backend's matched result means a single frame passed its acceptance rules. I
 Enrollment flow:
 
 1. Exactly one consenting visitor is present. Capture several distinct samples across modest angles and retain an ephemeral preview.
-2. Press Listen, speak a natural self-introduction, and stop. Typed input is an explicit alternative.
-3. Transcribe, parse, and show editable name/relationship beside the captured preview.
+2. After the unknown face is stable, one bounded listening window (at most 8 s, mic indicator visible, cancellable) opens automatically; the visitor speaks a natural self-introduction. Pressing Listen and typed input remain explicit alternatives.
+3. Transcribe, parse, and show **Save <name>?** with editable name/relationship beside the captured preview; one tap saves, **Not now** discards.
 4. Confirm the person. Persist the person plus 3–5 coherent samples atomically.
 5. Refresh recognition/person data. An already recognized person opens their profile rather than silently creating a duplicate.
 

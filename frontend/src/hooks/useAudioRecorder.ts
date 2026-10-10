@@ -10,7 +10,7 @@ export interface AudioRecorder {
   state: RecorderState;
   error: string | null;
   elapsedMs: number;
-  start: () => Promise<void>;
+  start: (options?: { maxDurationMs?: number }) => Promise<void>;
   stop: () => Promise<RecordedAudio | null>;
   cancel: () => void;
 }

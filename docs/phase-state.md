@@ -8,7 +8,7 @@ Maintained by Bhavya. No agent changes the phase on its own.
 | Next permitted work | Arnav, Bhavya, Vansh: Phase 1 tasks below. Ishan: wait for next UI release |
 | Approved base commit | `0f49c5e` on `main` (Phase 0 + Phase 1a UI shell, PR #5) |
 | Contract version | API 0.1.0 (`contracts/openapi.json`) |
-| Model | InsightFace 2.1, `buffalo_l` (checksums in `models/manifest.json`); embedding dimension **not yet verified** |
+| Model | InsightFace 2.1, `buffalo_l` (checksums in `models/manifest.json`); embedding dimension **512 verified** (Phase 1 probe, `docs/vision-validation.md`) |
 | Repository | https://github.com/bh-glitch/forget-not (private) |
 
 ## Phase 1a — UI layout shell (merged: PR #5, `0f49c5e`; checks re-verified by Bhavya)
@@ -46,6 +46,12 @@ Scope ([#1](https://github.com/bh-glitch/forget-not/issues/1)), inside Ishan's o
 
 Interface corrections found in Phase 1 are requested in the task issue and published
 by Bhavya before Phase 2 starts.
+
+## Bhavya — Phase 2 vision engine (started early, human decision 2026-10-10)
+
+Engine implemented on `bhavya/vision-integration` (see `docs/vision-validation.md`).
+`/api/vision/enrollment-sample` works end to end. `/api/vision/recognize` needs Arnav's
+`GalleryCache`/`load_gallery`. No contract changes.
 
 ## Blockers
 

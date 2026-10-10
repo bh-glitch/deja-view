@@ -45,3 +45,8 @@ proxy. Expect `503 MODEL_UNAVAILABLE` until the vision engine lands; show it as 
 - Persistent **Fixture mode — synthetic data** banner when `health.mode === "fixture"`.
 - Accessible loading/error/retry states for every `ApiClientError.code`.
 - `npm run typecheck && npm run lint && npm run test && npm run build` pass.
+
+## Auto-listen enrollment (decision 2026-10-10, see `docs/decisions.md`)
+Replaces "press Listen to enroll". Implement the trigger state machine (unknown-stable
+→ capture 3–5 samples → one ≤8 s listening window → **Save <name>?** one-tap confirm, Not now,
+cooldown, auto-listen toggle, disclosure text). Call `useAudioRecorder().start({ maxDurationMs: 8000 })`.
