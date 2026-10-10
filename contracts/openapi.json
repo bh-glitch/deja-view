@@ -1,0 +1,1736 @@
+{
+  "components": {
+    "schemas": {
+      "Body_captureEnrollmentSample": {
+        "properties": {
+          "frame": {
+            "contentMediaType": "application/octet-stream",
+            "description": "Unmirrored JPEG, <= 1 MB, longest edge <= 1280 px",
+            "title": "Frame",
+            "type": "string"
+          }
+        },
+        "required": [
+          "frame"
+        ],
+        "title": "Body_captureEnrollmentSample",
+        "type": "object"
+      },
+      "Body_recognizeFrame": {
+        "properties": {
+          "frame": {
+            "contentMediaType": "application/octet-stream",
+            "description": "Unmirrored JPEG, <= 1 MB, longest edge <= 1280 px",
+            "title": "Frame",
+            "type": "string"
+          }
+        },
+        "required": [
+          "frame"
+        ],
+        "title": "Body_recognizeFrame",
+        "type": "object"
+      },
+      "Body_transcribeAudio": {
+        "properties": {
+          "audio": {
+            "contentMediaType": "application/octet-stream",
+            "description": "Browser recording, <= 2 MB / 60 s",
+            "title": "Audio",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio"
+        ],
+        "title": "Body_transcribeAudio",
+        "type": "object"
+      },
+      "Box": {
+        "additionalProperties": false,
+        "description": "Face box in submitted-image (unmirrored) pixels.",
+        "properties": {
+          "height": {
+            "exclusiveMinimum": 0.0,
+            "title": "Height",
+            "type": "number"
+          },
+          "width": {
+            "exclusiveMinimum": 0.0,
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "title": "Box",
+        "type": "object"
+      },
+      "Conversation": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "editedByUser": {
+            "title": "Editedbyuser",
+            "type": "boolean"
+          },
+          "endedAt": {
+            "title": "Endedat",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "memory": {
+            "$ref": "#/components/schemas/MemoryDraft-Output"
+          },
+          "personId": {
+            "format": "uuid",
+            "title": "Personid",
+            "type": "string"
+          },
+          "reviewedByUser": {
+            "const": true,
+            "title": "Reviewedbyuser",
+            "type": "boolean"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ConversationSource"
+          },
+          "startedAt": {
+            "title": "Startedat",
+            "type": "string"
+          },
+          "transcript": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Transcript",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "personId",
+          "startedAt",
+          "endedAt",
+          "transcript",
+          "source",
+          "memory",
+          "reviewedByUser",
+          "editedByUser",
+          "createdAt"
+        ],
+        "title": "Conversation",
+        "type": "object"
+      },
+      "ConversationPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "conversation": {
+            "$ref": "#/components/schemas/Conversation"
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "title": "ConversationPayload",
+        "type": "object"
+      },
+      "ConversationResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ConversationPayload"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "ConversationResponse",
+        "type": "object"
+      },
+      "ConversationSource": {
+        "enum": [
+          "speech",
+          "typed"
+        ],
+        "title": "ConversationSource",
+        "type": "string"
+      },
+      "CreateConversationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "conversationId": {
+            "description": "Client-allocated; reused on retry for idempotency.",
+            "format": "uuid",
+            "title": "Conversationid",
+            "type": "string"
+          },
+          "editedByUser": {
+            "title": "Editedbyuser",
+            "type": "boolean"
+          },
+          "endedAt": {
+            "format": "date-time",
+            "title": "Endedat",
+            "type": "string"
+          },
+          "memory": {
+            "$ref": "#/components/schemas/MemoryDraft-Input"
+          },
+          "personId": {
+            "format": "uuid",
+            "title": "Personid",
+            "type": "string"
+          },
+          "reviewedByUser": {
+            "const": true,
+            "title": "Reviewedbyuser",
+            "type": "boolean"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ConversationSource"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "title": "Startedat",
+            "type": "string"
+          },
+          "transcript": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Transcript",
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationId",
+          "personId",
+          "startedAt",
+          "endedAt",
+          "transcript",
+          "source",
+          "memory",
+          "reviewedByUser",
+          "editedByUser"
+        ],
+        "title": "CreateConversationRequest",
+        "type": "object"
+      },
+      "CreatePersonRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Displayname",
+            "type": "string"
+          },
+          "embeddings": {
+            "items": {
+              "description": "L2-normalized face embedding",
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 4096,
+              "minItems": 1,
+              "type": "array"
+            },
+            "maxItems": 5,
+            "minItems": 3,
+            "title": "Embeddings",
+            "type": "array"
+          },
+          "model": {
+            "$ref": "#/components/schemas/FaceModel"
+          },
+          "personId": {
+            "description": "Client-allocated; reused on retry for idempotency.",
+            "format": "uuid",
+            "title": "Personid",
+            "type": "string"
+          },
+          "relationship": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relationship"
+          }
+        },
+        "required": [
+          "personId",
+          "displayName",
+          "model",
+          "embeddings"
+        ],
+        "title": "CreatePersonRequest",
+        "type": "object"
+      },
+      "CredentialPresence": {
+        "additionalProperties": false,
+        "description": "Presence of configured values only; NOT proof the provider accepts them.",
+        "properties": {
+          "elevenlabsApiKey": {
+            "title": "Elevenlabsapikey",
+            "type": "boolean"
+          },
+          "elevenlabsVoiceId": {
+            "title": "Elevenlabsvoiceid",
+            "type": "boolean"
+          },
+          "geminiApiKey": {
+            "title": "Geminiapikey",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "geminiApiKey",
+          "elevenlabsApiKey",
+          "elevenlabsVoiceId"
+        ],
+        "title": "CredentialPresence",
+        "type": "object"
+      },
+      "DatabaseHealth": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ready",
+          "detail"
+        ],
+        "title": "DatabaseHealth",
+        "type": "object"
+      },
+      "DeletedPerson": {
+        "additionalProperties": false,
+        "properties": {
+          "deletedPersonId": {
+            "format": "uuid",
+            "title": "Deletedpersonid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "deletedPersonId"
+        ],
+        "title": "DeletedPerson",
+        "type": "object"
+      },
+      "DeletedPersonResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DeletedPerson"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "DeletedPersonResponse",
+        "type": "object"
+      },
+      "EnrollmentSample": {
+        "additionalProperties": false,
+        "description": "Transient sample returned to the browser; persisted only on confirmation.",
+        "properties": {
+          "box": {
+            "$ref": "#/components/schemas/Box"
+          },
+          "embedding": {
+            "description": "L2-normalized face embedding",
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 4096,
+            "minItems": 1,
+            "title": "Embedding",
+            "type": "array"
+          },
+          "frameHeight": {
+            "exclusiveMinimum": 0.0,
+            "title": "Frameheight",
+            "type": "integer"
+          },
+          "frameWidth": {
+            "exclusiveMinimum": 0.0,
+            "title": "Framewidth",
+            "type": "integer"
+          },
+          "model": {
+            "$ref": "#/components/schemas/FaceModel"
+          }
+        },
+        "required": [
+          "embedding",
+          "model",
+          "box",
+          "frameWidth",
+          "frameHeight"
+        ],
+        "title": "EnrollmentSample",
+        "type": "object"
+      },
+      "EnrollmentSampleResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EnrollmentSample"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "EnrollmentSampleResponse",
+        "type": "object"
+      },
+      "ErrorCode": {
+        "enum": [
+          "BAD_REQUEST",
+          "VALIDATION_ERROR",
+          "NOT_FOUND",
+          "METHOD_NOT_ALLOWED",
+          "CONFLICT",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "INVALID_IMAGE",
+          "NO_FACE",
+          "MULTIPLE_FACES",
+          "FACE_INADEQUATE",
+          "EMBEDDING_INVALID",
+          "MODEL_MISMATCH",
+          "ENROLLMENT_INCOHERENT",
+          "EMPTY_AUDIO",
+          "EMPTY_TRANSCRIPT",
+          "AI_OUTPUT_INVALID",
+          "PROVIDER_NOT_CONFIGURED",
+          "PROVIDER_RATE_LIMITED",
+          "PROVIDER_TIMEOUT",
+          "PROVIDER_ERROR",
+          "MODEL_UNAVAILABLE",
+          "STORAGE_ERROR",
+          "NOT_IMPLEMENTED",
+          "INTERNAL_ERROR"
+        ],
+        "title": "ErrorCode",
+        "type": "string"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          },
+          "ok": {
+            "const": false,
+            "default": false,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "error",
+          "requestId"
+        ],
+        "title": "ErrorEnvelope",
+        "type": "object"
+      },
+      "FaceModel": {
+        "additionalProperties": false,
+        "description": "Exact identity of the embedding model. Vectors are comparable only when equal.",
+        "properties": {
+          "dimension": {
+            "maximum": 4096.0,
+            "minimum": 1.0,
+            "title": "Dimension",
+            "type": "integer"
+          },
+          "normalization": {
+            "const": "l2",
+            "title": "Normalization",
+            "type": "string"
+          },
+          "packName": {
+            "const": "buffalo_l",
+            "title": "Packname",
+            "type": "string"
+          },
+          "recognitionFile": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Recognitionfile",
+            "type": "string"
+          },
+          "recognitionSha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Recognitionsha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "packName",
+          "recognitionFile",
+          "recognitionSha256",
+          "dimension",
+          "normalization"
+        ],
+        "title": "FaceModel",
+        "type": "object"
+      },
+      "FaceModelHealth": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FaceModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ready",
+          "model",
+          "detail"
+        ],
+        "title": "FaceModelHealth",
+        "type": "object"
+      },
+      "FrameResult": {
+        "additionalProperties": false,
+        "description": "Single-frame recognition result. ``matched`` means this frame passed the\nacceptance rules only; the UI must still require stable consecutive matches.",
+        "properties": {
+          "box": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Box"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "frameHeight": {
+            "exclusiveMinimum": 0.0,
+            "title": "Frameheight",
+            "type": "integer"
+          },
+          "frameWidth": {
+            "exclusiveMinimum": 0.0,
+            "title": "Framewidth",
+            "type": "integer"
+          },
+          "personId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personid"
+          },
+          "similarity": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": -1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cosine similarity; not a probability.",
+            "title": "Similarity"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FrameStatus"
+          }
+        },
+        "required": [
+          "status",
+          "personId",
+          "similarity",
+          "box",
+          "frameWidth",
+          "frameHeight"
+        ],
+        "title": "FrameResult",
+        "type": "object"
+      },
+      "FrameResultResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FrameResult"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "FrameResultResponse",
+        "type": "object"
+      },
+      "FrameStatus": {
+        "enum": [
+          "no_face",
+          "multiple_faces",
+          "unknown",
+          "matched"
+        ],
+        "title": "FrameStatus",
+        "type": "string"
+      },
+      "Health": {
+        "additionalProperties": false,
+        "properties": {
+          "credentials": {
+            "$ref": "#/components/schemas/CredentialPresence"
+          },
+          "database": {
+            "$ref": "#/components/schemas/DatabaseHealth"
+          },
+          "mode": {
+            "enum": [
+              "fixture",
+              "live"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "vision": {
+            "$ref": "#/components/schemas/FaceModelHealth"
+          }
+        },
+        "required": [
+          "mode",
+          "database",
+          "vision",
+          "credentials"
+        ],
+        "title": "Health",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "IntroductionDraft": {
+        "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Displayname"
+          },
+          "intent": {
+            "$ref": "#/components/schemas/IntroductionIntent"
+          },
+          "nameEvidence": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nameevidence"
+          },
+          "relationship": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relationship"
+          },
+          "relationshipEvidence": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relationshipevidence"
+          }
+        },
+        "required": [
+          "intent",
+          "displayName",
+          "relationship",
+          "nameEvidence",
+          "relationshipEvidence"
+        ],
+        "title": "IntroductionDraft",
+        "type": "object"
+      },
+      "IntroductionDraftResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntroductionDraft"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "IntroductionDraftResponse",
+        "type": "object"
+      },
+      "IntroductionIntent": {
+        "enum": [
+          "introduction",
+          "other"
+        ],
+        "title": "IntroductionIntent",
+        "type": "string"
+      },
+      "MemoryDraft-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "cue": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Cue",
+            "type": "string"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/MemoryFact"
+            },
+            "maxItems": 3,
+            "title": "Facts",
+            "type": "array"
+          },
+          "summary": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "cue"
+        ],
+        "title": "MemoryDraft",
+        "type": "object"
+      },
+      "MemoryDraft-Output": {
+        "additionalProperties": false,
+        "properties": {
+          "cue": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Cue",
+            "type": "string"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/MemoryFact"
+            },
+            "maxItems": 3,
+            "title": "Facts",
+            "type": "array"
+          },
+          "summary": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "cue",
+          "facts"
+        ],
+        "title": "MemoryDraft",
+        "type": "object"
+      },
+      "MemoryDraftResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MemoryDraft-Output"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "MemoryDraftResponse",
+        "type": "object"
+      },
+      "MemoryFact": {
+        "additionalProperties": false,
+        "properties": {
+          "evidenceQuote": {
+            "description": "Literal substring of the original transcript.",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Evidencequote",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "evidenceQuote"
+        ],
+        "title": "MemoryFact",
+        "type": "object"
+      },
+      "PeopleList": {
+        "additionalProperties": false,
+        "properties": {
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            },
+            "title": "People",
+            "type": "array"
+          }
+        },
+        "required": [
+          "people"
+        ],
+        "title": "PeopleList",
+        "type": "object"
+      },
+      "PeopleListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PeopleList"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "PeopleListResponse",
+        "type": "object"
+      },
+      "Person": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "displayName": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Displayname",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "relationship": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relationship"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "relationship",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "Person",
+        "type": "object"
+      },
+      "PersonDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "conversations": {
+            "description": "Newest endedAt first; ties broken by createdAt desc, then id desc.",
+            "items": {
+              "$ref": "#/components/schemas/Conversation"
+            },
+            "title": "Conversations",
+            "type": "array"
+          },
+          "latestCue": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latestcue"
+          },
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          }
+        },
+        "required": [
+          "person",
+          "conversations",
+          "latestCue"
+        ],
+        "title": "PersonDetail",
+        "type": "object"
+      },
+      "PersonDetailResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PersonDetail"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "PersonDetailResponse",
+        "type": "object"
+      },
+      "PersonPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          }
+        },
+        "required": [
+          "person"
+        ],
+        "title": "PersonPayload",
+        "type": "object"
+      },
+      "PersonResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PersonPayload"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "PersonResponse",
+        "type": "object"
+      },
+      "SpeakRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "SpeakRequest",
+        "type": "object"
+      },
+      "TranscriptPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "transcript": {
+            "maxLength": 20000,
+            "title": "Transcript",
+            "type": "string"
+          }
+        },
+        "required": [
+          "transcript"
+        ],
+        "title": "TranscriptPayload",
+        "type": "object"
+      },
+      "TranscriptRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "transcript": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Transcript",
+            "type": "string"
+          }
+        },
+        "required": [
+          "transcript"
+        ],
+        "title": "TranscriptRequest",
+        "type": "object"
+      },
+      "TranscriptResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TranscriptPayload"
+          },
+          "ok": {
+            "const": true,
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "data",
+          "requestId"
+        ],
+        "title": "TranscriptResponse",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "forget-not API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/ai/introduction": {
+      "post": {
+        "operationId": "draftIntroduction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntroductionDraftResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Introduction",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/memory": {
+      "post": {
+        "operationId": "draftMemory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryDraftResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Memory",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/audio/speak": {
+      "post": {
+        "operationId": "speakText",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeakRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "audio/mpeg": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "MP3 audio",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Speak",
+        "tags": [
+          "audio"
+        ]
+      }
+    },
+    "/api/audio/transcribe": {
+      "post": {
+        "operationId": "transcribeAudio",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_transcribeAudio"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Transcribe",
+        "tags": [
+          "audio"
+        ]
+      }
+    },
+    "/api/conversations": {
+      "post": {
+        "operationId": "createConversation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Create Conversation",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Get Health",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/people": {
+      "get": {
+        "operationId": "listPeople",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeopleListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "List People",
+        "tags": [
+          "people"
+        ]
+      },
+      "post": {
+        "operationId": "createPerson",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Create Person",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/people/{person_id}": {
+      "delete": {
+        "operationId": "deletePerson",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedPersonResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Delete Person",
+        "tags": [
+          "people"
+        ]
+      },
+      "get": {
+        "operationId": "getPerson",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Get Person",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/vision/enrollment-sample": {
+      "post": {
+        "operationId": "captureEnrollmentSample",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_captureEnrollmentSample"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollmentSampleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Enrollment Sample",
+        "tags": [
+          "vision"
+        ]
+      }
+    },
+    "/api/vision/recognize": {
+      "post": {
+        "operationId": "recognizeFrame",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_recognizeFrame"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (non-2xx)"
+          }
+        },
+        "summary": "Recognize",
+        "tags": [
+          "vision"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "data": {
+    "intent": "other",
+    "displayName": null,
+    "relationship": null,
+    "nameEvidence": null,
+    "relationshipEvidence": null
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}

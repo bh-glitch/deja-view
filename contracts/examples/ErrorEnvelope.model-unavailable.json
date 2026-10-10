@@ -1,0 +1,9 @@
+{
+  "ok": false,
+  "error": {
+    "code": "MODEL_UNAVAILABLE",
+    "message": "Face engine is not implemented yet (Phase 0 placeholder).",
+    "retryable": false
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}

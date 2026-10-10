@@ -1,0 +1,25 @@
+{
+  "pack": {
+    "name": "buffalo_l",
+    "archive": {
+      "filename": "buffalo_l.zip",
+      "url": "https://github.com/deepinsight/insightface/releases/download/model-zoo/buffalo_l.zip",
+      "sha256": "80ffe37d8a5940d59a7384c201a2a38d4741f2f3c51eef46ebb28218a7b0ca2f"
+    },
+    "files": {
+      "1k3d68.onnx": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+      "2d106det.onnx": "f001b856447c413801ef5c42091ed0cd516fcd21f2d6b79635b1e733a7109dbf",
+      "det_10g.onnx": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+      "genderage.onnx": "4fde69b1c810857b88c64a335084f1c3fe8f01246c9a191b48c7bb756d6652fb",
+      "w600k_r50.onnx": "4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43"
+    },
+    "source": "Official InsightFace model zoo release asset (tag 'model-zoo'); same URL InsightFace 2.1 uses in insightface/utils/storage.py",
+    "officialGuide": "https://github.com/deepinsight/insightface/blob/master/python-package/docs/model_zoo.md",
+    "license": "InsightFace library code is MIT. The pretrained buffalo_l weights are provided for NON-COMMERCIAL RESEARCH purposes only (https://github.com/deepinsight/insightface#license). Without a signed MODEL.LICENSE, InsightFace 2.1 treats packs as default non-commercial. Do not describe these weights as unrestricted or commercially licensed.",
+    "checksumNote": "Checksums are observed from Bhavya's download and pin our copy; InsightFace does not publish official checksums for this asset.",
+    "expectedEmbeddingDimension": 512,
+    "embeddingDimensionVerified": false,
+    "runtime": "onnxruntime CPUExecutionProvider",
+    "recordedAt": "2026-10-10T18:28:47.035965Z"
+  }
+}

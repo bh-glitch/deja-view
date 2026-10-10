@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "data": {
+    "status": "matched",
+    "personId": "11111111-1111-4111-8111-111111111111",
+    "similarity": 0.62,
+    "box": {
+      "x": 212.0,
+      "y": 96.5,
+      "width": 180.0,
+      "height": 220.0
+    },
+    "frameWidth": 640,
+    "frameHeight": 480
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}

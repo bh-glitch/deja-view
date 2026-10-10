@@ -1,0 +1,51 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+
+# Runtime data: SQLite, recordings, transcripts, embeddings, face images
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+recordings/
+*.webm
+*.wav
+*.mp3
+*.m4a
+*.ogg
+captures/
+embeddings/
+*.npy
+*.npz
+
+# Downloaded model weights (provenance lives in models/manifest.json)
+models/weights/
+*.onnx
+*.zip
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
