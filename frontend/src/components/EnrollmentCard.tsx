@@ -8,8 +8,10 @@ export function EnrollmentCard({
   state,
   onSave,
   onDismiss,
+  mirrored = true,
 }: {
   state: EnrollmentState;
+  mirrored?: boolean;
   onSave: (name: string, relationship: string) => void;
   onDismiss: () => void;
 }) {
@@ -58,7 +60,7 @@ export function EnrollmentCard({
             src={state.previewUrl}
             alt="Captured face preview"
             className="h-24 w-32 rounded-md object-cover"
-            style={{ transform: "scaleX(-1)" }}
+            style={mirrored ? { transform: "scaleX(-1)" } : undefined}
           />
         )}
         <div className="flex flex-1 flex-col gap-2">

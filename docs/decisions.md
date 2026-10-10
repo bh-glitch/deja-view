@@ -121,3 +121,9 @@ Replaces "one visitor at a time / multiple faces name nobody".
 - Enrollment is unchanged: it auto-starts only for a lone steady unknown face, and the
   sample endpoint still rejects frames with several faces (`MULTIPLE_FACES`).
 - Cost: about 50 ms per extra face on the M3 CPU (6 faces ≈ 360–410 ms per frame).
+
+## LAN/phone testing (human decision, 2026-10-10)
+`npm run dev:lan` serves the frontend over HTTPS on the local network so a phone browser can use
+its camera (front or back via **Switch camera**). Testing convenience only: no public hosting or
+phone app. The backend stays bound to 127.0.0.1. The front-camera preview is mirrored, the back
+camera is not, and overlay boxes follow the same rule. See `docs/setup.md` §7.
