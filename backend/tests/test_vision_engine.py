@@ -115,3 +115,40 @@ def test_enrollment_endpoint_and_health(single_faces, tmp_path) -> None:
         )
         assert response.status_code == 200, response.text
         assert len(response.json()["data"]["embedding"]) == 512
+
+
+def test_enroll_save_recognize_delete_journey(single_faces, tmp_path) -> None:
+    """Cross-module: real engine + Arnav's SQLite storage and gallery cache over HTTP."""
+    a, b = single_faces
+    variants = [a.bgr, cv2.convertScaleAbs(a.bgr, alpha=0.85), cv2.GaussianBlur(a.bgr, (3, 3), 0)]
+    settings = Settings(_env_file=None, database_path=tmp_path / "test-fixture.db")
+    with TestClient(create_app(settings)) as client:
+
+        def post_frame(path: str, bgr: np.ndarray):
+            files = {"frame": ("f.jpg", _jpeg(bgr), "image/jpeg")}
+            response = client.post(path, files=files)
+            assert response.status_code == 200, response.text
+            return response.json()["data"]
+
+        samples = [post_frame("/api/vision/enrollment-sample", v) for v in variants]
+        person_id = str(uuid.uuid4())
+        created = client.post(
+            "/api/people",
+            json={
+                "personId": person_id,
+                "displayName": "Demo Face A",
+                "relationship": None,
+                "model": samples[0]["model"],
+                "embeddings": [s["embedding"] for s in samples],
+            },
+        )
+        assert created.status_code == 201, created.text
+
+        returning = post_frame("/api/vision/recognize", cv2.flip(a.bgr, 1))
+        assert returning["status"] == "matched" and returning["personId"] == person_id
+        stranger = post_frame("/api/vision/recognize", b.bgr)
+        assert stranger["status"] == "unknown" and stranger["personId"] is None
+
+        assert client.delete(f"/api/people/{person_id}").status_code == 200
+        forgotten = post_frame("/api/vision/recognize", a.bgr)
+        assert forgotten["status"] == "unknown"

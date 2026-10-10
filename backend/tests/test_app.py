@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from app.config import REPO_ROOT, Settings
@@ -38,8 +36,6 @@ def test_validation_errors_use_envelope(client) -> None:
 @pytest.mark.parametrize(
     ("method", "path", "kwargs", "status", "code"),
     [
-        ("get", "/api/people", {}, 501, "NOT_IMPLEMENTED"),
-        ("get", "/api/people/11111111-1111-4111-8111-111111111111", {}, 501, "NOT_IMPLEMENTED"),
         ("post", "/api/ai/introduction", {"json": {"transcript": "hi"}}, 501, "NOT_IMPLEMENTED"),
         ("post", "/api/audio/speak", {"json": {"text": "hi"}}, 501, "NOT_IMPLEMENTED"),
         (
@@ -60,13 +56,6 @@ def test_validation_errors_use_envelope(client) -> None:
 )
 def test_placeholders_fail_explicitly(client, method, path, kwargs, status, code) -> None:
     _assert_error(getattr(client, method)(path, **kwargs), status, code)
-
-
-def test_create_conversation_placeholder(client) -> None:
-    raw = json.loads(
-        (REPO_ROOT / "contracts/examples/CreateConversationRequest.alex.json").read_text()
-    )
-    _assert_error(client.post("/api/conversations", json=raw), 501, "NOT_IMPLEMENTED")
 
 
 def test_live_mode_rejects_fixture_database(tmp_path) -> None:

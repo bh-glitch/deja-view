@@ -101,10 +101,10 @@ def test_create_person_needs_engine(client) -> None:
     _error(response, 503, "MODEL_UNAVAILABLE")
 
 
-def test_create_person_surfaces_unimplemented_vision_helpers(client, engine) -> None:
-    # Real Bhavya helpers: until Phase 2 they refuse, and nothing is saved.
+def test_create_person_uses_real_vision_helpers(client, engine) -> None:
+    # Real Bhavya helpers (integration): unrelated vectors are refused, and nothing is saved.
     _, response = _create(client)
-    _error(response, 501, "NOT_IMPLEMENTED")
+    _error(response, 422, "ENROLLMENT_INCOHERENT")
     assert PeopleListResponse.model_validate(client.get("/api/people").json()).data.people == []
 
 
