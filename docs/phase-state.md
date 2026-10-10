@@ -4,9 +4,9 @@ Maintained by Bhavya. No agent changes the phase on its own.
 
 | Field | Value |
 |---|---|
-| Current phase | **1 — Feasibility: released for Arnav, Bhavya and Vansh** (Phase 1a merged) |
-| Next permitted work | Arnav, Bhavya, Vansh: Phase 1 tasks below. Ishan: wait for next UI release |
-| Approved base commit | `0f49c5e` on `main` (Phase 0 + Phase 1a UI shell, PR #5) |
+| Current phase | **2 — MVP modules (partial)**: storage + vision merged; Ishan auto-listen UI released |
+| Next permitted work | Ishan: Phase 2 UI incl. auto-listen enrollment. Vansh: finish Phase 1 provider checks, then Phase 2. Arnav: fixes on request. Bhavya: calibration + integration |
+| Approved base commit | `a3ea6bb` on `main` (PR #5 UI shell, PR #6 storage, PR #7 vision + integration) |
 | Contract version | API 0.1.0 (`contracts/openapi.json`) |
 | Model | InsightFace 2.1, `buffalo_l` (checksums in `models/manifest.json`); embedding dimension **512 verified** (Phase 1 probe, `docs/vision-validation.md`) |
 | Repository | https://github.com/bh-glitch/forget-not (private) |
@@ -46,6 +46,15 @@ Scope ([#1](https://github.com/bh-glitch/forget-not/issues/1)), inside Ishan's o
 
 Interface corrections found in Phase 1 are requested in the task issue and published
 by Bhavya before Phase 2 starts.
+
+## Phase 2 status (2026-10-10)
+
+| Owner | Status |
+|---|---|
+| Arnav | **Merged** (PR #6 via #7): SQLite, people/conversations, health, gallery cache |
+| Bhavya | **Merged** (PR #7): vision engine. The end-to-end save → recognize → delete HTTP test passes |
+| Ishan | **Released:** Phase 2 UI, including auto-listen enrollment (`docs/decisions.md`). Uses real vision and storage; speech is a placeholder until Vansh lands |
+| Vansh | Phase 1 provider checks in progress, then Phase 2 (recorder `start({ maxDurationMs })`, STT, introduction/memory drafts, TTS) |
 
 ## Bhavya — Phase 2 vision engine (started early, human decision 2026-10-10)
 
