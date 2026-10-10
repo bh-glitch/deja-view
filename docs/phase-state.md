@@ -4,14 +4,14 @@ Maintained by Bhavya. No agent changes the phase on its own.
 
 | Field | Value |
 |---|---|
-| Current phase | **1a — Ishan's UI layout shell (Ishan only)** |
-| Next permitted work | Ishan: Phase 1a below. Arnav, Bhavya, Vansh: **wait** until Ishan's PR is merged into `main` |
-| Approved base commit | `7f75078` on `main` (Phase 0 foundation) |
+| Current phase | **1 — Feasibility: released for Arnav and Bhavya** (Phase 1a merged) |
+| Next permitted work | Arnav and Bhavya: Phase 1 tasks below. Vansh: **wait** for release. Ishan: wait for next UI release |
+| Approved base commit | `0f49c5e` on `main` (Phase 0 + Phase 1a UI shell, PR #5) |
 | Contract version | API 0.1.0 (`contracts/openapi.json`) |
 | Model | InsightFace 2.1, `buffalo_l` (checksums in `models/manifest.json`); embedding dimension **not yet verified** |
 | Repository | https://github.com/bh-glitch/forget-not (private) |
 
-## Phase 1a — UI layout shell (released, Ishan only)
+## Phase 1a — UI layout shell (merged: PR #5, `0f49c5e`; checks re-verified by Bhavya)
 
 Human decision, 2026-10-10: Ishan goes first with a simple layout so everyone builds on a
 shared UI. Everyone else waits until it is merged.
@@ -31,11 +31,11 @@ Scope ([#1](https://github.com/bh-glitch/forget-not/issues/1)), inside Ishan's o
 - Synthetic fixtures may populate the identity card and people list only while the fixture banner is shown.
 - No edits to generated types, dependencies, config, backend, or Vansh's audio paths.
 
-**Merge exception (human-approved, Phase 1a only):** once `npm run typecheck`, `lint`,
+**Merge exception (human-approved, Phase 1a only, now closed):** once `npm run typecheck`, `lint`,
 `test` and `build` pass, Ishan pushes `ishan/frontend`, opens a PR and merges it into
 `main` himself, then posts the merge commit in #1. Later phases go back to Bhavya merging.
 
-## Phase 1 — Feasibility (after Phase 1a is merged)
+## Phase 1 — Feasibility (released for Arnav and Bhavya; Vansh pending)
 
 | Owner | Task | Handoff |
 |---|---|---|
@@ -49,5 +49,5 @@ by Bhavya before Phase 2 starts.
 
 ## Blockers
 
-- Arnav, Bhavya and Vansh are waiting for the Phase 1a merge (by human decision).
+- Vansh waits until Phase 1 is released for him (human decision).
 - Provider keys/credits are unverified (Vansh, Phase 1).
