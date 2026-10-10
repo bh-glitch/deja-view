@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "data": {
+    "mode": "fixture",
+    "database": {
+      "ready": true,
+      "detail": null
+    },
+    "vision": {
+      "ready": false,
+      "model": null,
+      "detail": "Face engine is not implemented yet (Phase 0 placeholder)."
+    },
+    "credentials": {
+      "geminiApiKey": false,
+      "elevenlabsApiKey": false,
+      "elevenlabsVoiceId": false
+    }
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}

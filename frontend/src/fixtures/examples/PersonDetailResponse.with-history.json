@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "data": {
+    "person": {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "displayName": "Demo Alex",
+      "relationship": "Teammate (synthetic)",
+      "createdAt": "2026-10-10T15:00:00Z",
+      "updatedAt": "2026-10-10T15:00:00Z"
+    },
+    "conversations": [
+      {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "personId": "11111111-1111-4111-8111-111111111111",
+        "startedAt": "2026-10-10T15:10:00Z",
+        "endedAt": "2026-10-10T15:12:30Z",
+        "transcript": "Hi, it's Alex again. I have a guitar show this weekend and I've been practicing every night.",
+        "source": "speech",
+        "memory": {
+          "summary": "Demo Alex talked about practicing guitar for a weekend show.",
+          "cue": "Ask Alex how the weekend guitar show went.",
+          "facts": [
+            {
+              "text": "Alex has a guitar show this weekend.",
+              "evidenceQuote": "I have a guitar show this weekend"
+            }
+          ]
+        },
+        "reviewedByUser": true,
+        "editedByUser": false,
+        "createdAt": "2026-10-10T15:13:00Z"
+      }
+    ],
+    "latestCue": "Ask Alex how the weekend guitar show went."
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}

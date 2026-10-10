@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "data": {
+    "person": {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "displayName": "Demo Sam",
+      "relationship": null,
+      "createdAt": "2026-10-10T15:05:00Z",
+      "updatedAt": "2026-10-10T15:05:00Z"
+    },
+    "conversations": [],
+    "latestCue": null
+  },
+  "requestId": "00000000-0000-4000-8000-000000000000"
+}
