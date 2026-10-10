@@ -18,7 +18,6 @@ from app.contracts import (
     DeletedPersonResponse,
     ErrorEnvelope,
     FrameResult,
-    FrameStatus,
     HealthResponse,
     PeopleListResponse,
     PersonDetailResponse,
@@ -42,7 +41,7 @@ class StubEngine:
 
     def recognize(self, image, gallery):
         self.galleries.append(gallery)
-        return FrameResult(status=FrameStatus.NO_FACE, frame_width=1, frame_height=1)
+        return FrameResult(faces=[], frame_width=1, frame_height=1)
 
 
 @pytest.fixture

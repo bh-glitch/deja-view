@@ -8,13 +8,13 @@ Build one working local demo in a 24-hour hackathon. Use consenting teammates, d
 
 Confirmed MVP decisions:
 
-- Start with a laptop webcam, one app user, and one visible visitor at a time.
+- Start with a laptop webcam and one app user. Every visible face (up to 8) is recognized independently; enrollment is one visitor at a time. (Multi-face decision 2026-10-10; see `docs/decisions.md`.)
 - The user explicitly enables the camera. Recognition then runs automatically.
 - When an unfamiliar face stays in view, the app captures face samples and opens one short, visible listening window for an introduction ("Hey, I'm Bhavya"). The user confirms the proposed person with one tap before enrollment. (Decision 2026-10-10; replaces the Listen-button trigger. See `docs/decisions.md`.)
 - Store 3–5 face embeddings per person, with their confirmed name and optional relationship.
 - Record conversations only after an explicit button press; review the generated reminder before saving.
 - Show the latest saved reminder when the person returns. New people show **No saved conversation yet**.
-- Unknown, weak, or ambiguous matches remain **Unknown**. Multiple faces must not receive misleading labels.
+- Unknown, weak, or ambiguous matches remain **Unknown**. Each face is labelled on its own; one person's name is never shown on two faces, and names never carry over to a different face.
 - Use SQLite on the demo computer. Saved people and conversations survive a backend restart.
 - Keep recognition and face images local. Only explicitly recorded audio/text goes to the selected speech/AI providers.
 - No public hosting, accounts, phone/glasses integration, device synchronization, continuous listening, speaker-to-face attribution, or voice cloning in the first version.
@@ -184,7 +184,7 @@ Required records:
 - `MemoryDraft`: `summary` up to 500 characters, `cue` up to 240, and up to three `{ text, evidenceQuote }` facts. Empty facts are allowed.
 - `Conversation`: `id`, `personId`, start/end timestamps, original `transcript`, `source` (`speech|typed`), `memory`, `reviewedByUser: true`, `editedByUser`, `createdAt`.
 - `PersonDetail`: person, conversations ordered newest end-time first with deterministic tie-break, and nullable `latestCue`.
-- `FrameResult`: `status` (`no_face|multiple_faces|unknown|matched`), nullable `personId`/`similarity`/`box`, and decoded `frameWidth`/`frameHeight`. Non-matched results have no person identity. A box contains `x`, `y`, `width`, `height` in submitted-image pixels.
+- `FrameResult`: `faces` (largest first, at most 8; empty = no face) of `FaceResult` {`status` (`unknown|matched`), nullable `personId`/`similarity`, `box`}, and decoded `frameWidth`/`frameHeight`. Unknown faces have no person identity; a person is matched to at most one face per frame. A box contains `x`, `y`, `width`, `height` in submitted-image pixels.
 - `EnrollmentSample`: one normalized embedding, model metadata, box, and decoded frame dimensions. It is transient until enrollment is confirmed.
 
 JSON success uses `{ ok: true, data, requestId }`; errors use `{ ok: false, error: { code, message, retryable }, requestId }` with a non-2xx status. Normalize FastAPI validation/HTTP/unhandled errors into this format. Speech success is the sole exception: MP3 bytes with `audio/mpeg` and a request ID header; speech failures still use JSON. Never return HTTP 200 for an error.
@@ -218,7 +218,7 @@ Prepare official `buffalo_l` weights before the demo. Record origin, version, ch
 
 Recognition compares the query against saved normalized embeddings using cosine similarity. Group scores by person and take that person's best sample. Apply a calibrated minimum score and a margin over the second-best **person**. Samples of the same person are not competing identities. An empty gallery returns unknown. Do not display scores as probability percentages.
 
-The backend's matched result means a single frame passed its acceptance rules. Ishan requires stable consecutive results before displaying the identity, discards stale requests/session results, and clears old identity on face loss, unknown, multiple faces, or visitor changes. Scale/mirror overlay boxes using returned image dimensions; do not attach an old person's name to a new face.
+The backend's matched result means a single frame passed its acceptance rules. The UI follows each face by position, requires stable consecutive results per face before displaying its identity, discards stale requests/session results, and clears a face's identity on face loss, unknown, or visitor changes. Scale/mirror overlay boxes using returned image dimensions; do not attach an old person's name to a new face.
 
 Enrollment flow:
 

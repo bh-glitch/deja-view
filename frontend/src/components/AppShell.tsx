@@ -25,7 +25,13 @@ import {
   type Person,
   type PersonDetail,
 } from "@/lib/api-client";
-import { initialTracker, shouldStartEnrollment, trackFrame, type TrackerState } from "@/lib/identity-tracker";
+import {
+  initialTracker,
+  shouldStartEnrollment,
+  stablePersonIds,
+  trackFrame,
+  type TrackerState,
+} from "@/lib/identity-tracker";
 
 type HealthState =
   | { kind: "loading" }
@@ -38,16 +44,11 @@ function messageFor(error: unknown, fallback: string): string {
 
 function emptyIdentityText(result: FrameResult | null, cameraLive: boolean): string {
   if (!cameraLive) return "Start the camera to recognize people.";
-  switch (result?.status) {
-    case "no_face":
-      return "No one in view.";
-    case "multiple_faces":
-      return "More than one person in view. Not identifying anyone.";
-    case "unknown":
-      return "This face is not saved yet.";
-    default:
-      return "Looking…";
-  }
+  if (!result) return "Looking…";
+  const faces = result.faces.length;
+  if (faces === 0) return "No one in view.";
+  if (faces === 1) return "This face is not saved yet.";
+  return `${faces} faces in view, none saved yet. To add someone, have them face the camera alone.`;
 }
 
 export function AppShell() {
@@ -56,7 +57,7 @@ export function AppShell() {
   const [peopleError, setPeopleError] = useState<string | null>(null);
   const [tracker, setTracker] = useState<TrackerState>(initialTracker);
   const [lastResult, setLastResult] = useState<FrameResult | null>(null);
-  const [detail, setDetail] = useState<PersonDetail | null>(null);
+  const [details, setDetails] = useState<Record<string, PersonDetail>>({});
   const trackerRef = useRef<TrackerState>(initialTracker);
 
   const camera = useCamera();
@@ -74,7 +75,7 @@ export function AppShell() {
   const resetIdentity = useCallback(() => {
     trackerRef.current = initialTracker;
     setTracker(initialTracker);
-    setDetail(null);
+    setDetails({});
   }, []);
 
   const enrollment = useAutoEnrollment(camera.videoRef, () => {
@@ -90,7 +91,7 @@ export function AppShell() {
       trackerRef.current = next;
       setTracker(next);
       setLastResult(result);
-      if (result.status === "no_face") enrollment.noteFaceLeft();
+      if (result.faces.length === 0) enrollment.noteFaceLeft();
       if (shouldStartEnrollment(next) && enrollment.canAutoStart()) {
         trackerRef.current = initialTracker;
         setTracker(initialTracker);
@@ -122,18 +123,19 @@ export function AppShell() {
     return () => controller.abort();
   }, []);
 
-  // Load the recognized person's detail; discard stale responses when identity changes.
-  const stableId = tracker.stableId;
+  // Load details for newly recognized people (one request each, cached until a reset).
+  const stableIds = stablePersonIds(tracker);
+  const missingKey = stableIds.filter((id) => !details[id]).sort().join(",");
   useEffect(() => {
-    if (!stableId) return; // `recognized` below ignores detail for any other person
+    if (!missingKey) return;
     const controller = new AbortController();
-    getPerson(stableId, controller.signal)
-      .then((value) => setDetail(value))
-      .catch(() => {
-        if (!controller.signal.aborted) setDetail(null);
-      });
+    for (const id of missingKey.split(",")) {
+      getPerson(id, controller.signal)
+        .then((value) => setDetails((current) => ({ ...current, [id]: value })))
+        .catch(() => undefined); // the face keeps its "…" label; retried on the next change
+    }
     return () => controller.abort();
-  }, [stableId]);
+  }, [missingKey]);
 
   // Stopping the camera ends any enrollment session and clears identity.
   const stopCamera = useCallback(() => {
@@ -157,17 +159,21 @@ export function AppShell() {
     [refreshPeople, resetIdentity],
   );
 
-  const recognized = detail && detail.person.id === stableId ? detail : null;
-  const overlay: FaceOverlay | null =
-    lastResult?.box && !naming
-      ? {
-          box: lastResult.box,
-          frameWidth: lastResult.frameWidth,
-          frameHeight: lastResult.frameHeight,
-          label: recognized ? recognized.person.displayName : "Unknown",
-          tone: recognized ? "known" : "unknown",
-        }
-      : null;
+  const recognized = stableIds.flatMap((id) => (details[id] ? [details[id]] : []));
+  const overlays: FaceOverlay[] =
+    lastResult && !naming
+      ? tracker.tracks.map((track) => {
+          const known = track.stableId ? details[track.stableId] : undefined;
+          return {
+            key: track.trackId,
+            box: track.box,
+            frameWidth: lastResult.frameWidth,
+            frameHeight: lastResult.frameHeight,
+            label: known ? known.person.displayName : track.stableId ? "…" : "Unknown",
+            tone: track.stableId ? "known" : "unknown",
+          };
+        })
+      : [];
 
   const fixtureMode = health.kind === "ready" && health.health.mode === "fixture";
 
@@ -195,7 +201,7 @@ export function AppShell() {
             onStart={() => void camera.start()}
             onStop={stopCamera}
             status={status}
-            overlay={overlay}
+            overlays={overlays}
             paused={enrolling}
           />
           <div className="flex flex-col gap-4">
@@ -205,13 +211,14 @@ export function AppShell() {
               onSave={(name, relationship) => void enrollment.save(name, relationship)}
               onDismiss={enrollment.dismiss}
             />
-            {!naming && (
-              <IdentityCard
-                person={recognized?.person ?? null}
-                latestCue={recognized?.latestCue ?? null}
-                emptyText={emptyIdentityText(lastResult, cameraLive)}
-              />
-            )}
+            {!naming &&
+              (recognized.length > 0 ? (
+                recognized.map((item) => (
+                  <IdentityCard key={item.person.id} person={item.person} latestCue={item.latestCue} />
+                ))
+              ) : (
+                <IdentityCard person={null} latestCue={null} emptyText={emptyIdentityText(lastResult, cameraLive)} />
+              ))}
             <PeopleList people={people} error={peopleError} onDelete={(person) => void onDelete(person)} />
           </div>
         </div>

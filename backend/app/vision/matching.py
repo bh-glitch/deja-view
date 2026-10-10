@@ -44,3 +44,26 @@ def match_gallery(
     if second is not None and best - second < margin:
         return MatchDecision(None, best, second)
     return MatchDecision(person_id, best, second)
+
+
+def match_faces(queries: list[np.ndarray], gallery: Gallery) -> list[MatchDecision]:
+    """Match every face independently, then give each person to at most one face.
+
+    When several faces match the same person, only the strongest keeps the identity; the
+    others become unknown, so one name is never shown on two faces.
+    """
+    decisions = [match_gallery(query, gallery) for query in queries]
+    best_face: dict[UUID, int] = {}
+    for index, decision in enumerate(decisions):
+        if decision.person_id is None:
+            continue
+        current = best_face.get(decision.person_id)
+        if current is None or decision.best_similarity > decisions[current].best_similarity:
+            best_face[decision.person_id] = index
+    winners = set(best_face.values())
+    return [
+        decision
+        if decision.person_id is None or index in winners
+        else MatchDecision(None, decision.best_similarity, decision.second_similarity)
+        for index, decision in enumerate(decisions)
+    ]

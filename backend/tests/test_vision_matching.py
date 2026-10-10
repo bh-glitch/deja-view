@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from app.vision.gallery import Gallery, GalleryEntry
-from app.vision.matching import match_gallery
+from app.vision.matching import match_faces, match_gallery
 from tests.vision_helpers import MODEL, near, random_unit
 
 ALEX, SAM = uuid.uuid4(), uuid.uuid4()
@@ -55,3 +55,19 @@ def test_samples_of_same_person_do_not_compete(rng) -> None:
     decision = match_gallery(near(alex, 0.75, rng), _gallery(alex=samples))
     assert decision.person_id == ALEX
     assert decision.second_similarity is None
+
+
+def test_each_face_matched_independently(rng) -> None:
+    alex, sam = random_unit(rng), random_unit(rng)
+    stranger = random_unit(rng)
+    decisions = match_faces(
+        [near(sam, 0.7, rng), stranger, near(alex, 0.7, rng)], _gallery(alex=[alex], sam=[sam])
+    )
+    assert [d.person_id for d in decisions] == [SAM, None, ALEX]
+
+
+def test_one_person_never_labels_two_faces(rng) -> None:
+    alex = random_unit(rng)
+    strong, weaker = near(alex, 0.8, rng), near(alex, 0.6, rng)
+    decisions = match_faces([weaker, strong], _gallery(alex=[alex]))
+    assert [d.person_id for d in decisions] == [None, ALEX]

@@ -41,6 +41,7 @@ MIN_ENROLLMENT_SAMPLES = 3
 MAX_ENROLLMENT_SAMPLES = 5
 MAX_FRAME_BYTES = 1_000_000
 MAX_FRAME_LONGEST_EDGE = 1280
+MAX_FACES_PER_FRAME = 8
 MAX_AUDIO_BYTES = 2_000_000
 MAX_AUDIO_SECONDS = 60
 MAX_TRANSCRIPT_CHARS = 20_000
@@ -262,38 +263,45 @@ class Box(WireModel):
     height: Annotated[float, Field(gt=0)]
 
 
-class FrameStatus(StrEnum):
-    NO_FACE = "no_face"
-    MULTIPLE_FACES = "multiple_faces"
+class FaceStatus(StrEnum):
     UNKNOWN = "unknown"
     MATCHED = "matched"
 
 
-class FrameResult(WireModel):
-    """Single-frame recognition result. ``matched`` means this frame passed the
-    acceptance rules only; the UI must still require stable consecutive matches."""
+class FaceResult(WireModel):
+    """One detected face. ``matched`` means it passed the acceptance rules in this frame
+    only; the UI must still require stable consecutive matches before showing a name."""
 
-    status: FrameStatus
+    status: FaceStatus
     person_id: UUID | None = None
     similarity: Annotated[float, Field(ge=-1, le=1)] | None = Field(
         default=None, description="Cosine similarity; not a probability."
     )
-    box: Box | None = None
+    box: Box
+
+    @model_validator(mode="after")
+    def _identity_rules(self) -> FaceResult:
+        if self.status == FaceStatus.MATCHED:
+            if self.person_id is None or self.similarity is None:
+                raise ValueError("matched faces require personId and similarity")
+        elif self.person_id is not None or self.similarity is not None:
+            raise ValueError("unknown faces must not carry identity")
+        return self
+
+
+class FrameResult(WireModel):
+    """All faces in one frame (largest first, at most MAX_FACES_PER_FRAME). An empty
+    list means no face. A person is matched to at most one face per frame."""
+
+    faces: Annotated[list[FaceResult], Field(max_length=MAX_FACES_PER_FRAME)]
     frame_width: Annotated[int, Field(gt=0)]
     frame_height: Annotated[int, Field(gt=0)]
 
     @model_validator(mode="after")
-    def _identity_rules(self) -> FrameResult:
-        if self.status == FrameStatus.MATCHED:
-            if self.person_id is None or self.similarity is None or self.box is None:
-                raise ValueError("matched results require personId, similarity and box")
-        else:
-            if self.person_id is not None or self.similarity is not None:
-                raise ValueError("non-matched results must not carry identity")
-            if self.status == FrameStatus.UNKNOWN and self.box is None:
-                raise ValueError("unknown results require the detected face box")
-            if self.status in (FrameStatus.NO_FACE, FrameStatus.MULTIPLE_FACES) and self.box:
-                raise ValueError(f"{self.status.value} results carry no box")
+    def _unique_people(self) -> FrameResult:
+        ids = [face.person_id for face in self.faces if face.person_id is not None]
+        if len(ids) != len(set(ids)):
+            raise ValueError("a person can be matched to at most one face per frame")
         return self
 
 

@@ -15,7 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.contracts import ApiError, ErrorCode, FrameStatus
+from app.contracts import ApiError, ErrorCode, FaceStatus
 from app.main import create_app
 from app.vision.engine import InsightFaceEngine, load_face_engine
 from app.vision.gallery import Gallery, GalleryEntry
@@ -63,19 +63,39 @@ def test_model_metadata_is_verified(engine) -> None:
     assert engine.model.normalization == "l2"
 
 
-def test_group_photo_is_multiple_faces(engine, demo_bgr) -> None:
+def test_group_photo_returns_every_face(engine, demo_bgr) -> None:
     image = decode_jpeg(_jpeg(demo_bgr))
     result = engine.recognize(image, Gallery.empty(engine.model))
-    assert result.status == FrameStatus.MULTIPLE_FACES
-    assert result.person_id is None and result.box is None
+    assert len(result.faces) == 6
+    assert all(
+        face.status == FaceStatus.UNKNOWN and face.person_id is None for face in result.faces
+    )
+    areas = [face.box.width * face.box.height for face in result.faces]
+    assert areas == sorted(areas, reverse=True)
     with pytest.raises(ApiError) as info:
         engine.enrollment_sample(image)
     assert info.value.code == ErrorCode.MULTIPLE_FACES
 
 
+def test_group_photo_names_enrolled_people_only(engine, demo_bgr, single_faces) -> None:
+    a, b = single_faces
+    alex, sam = uuid.uuid4(), uuid.uuid4()
+    gallery = Gallery(
+        engine.model,
+        (
+            GalleryEntry(alex, np.array([engine.enrollment_sample(a).embedding], np.float32)),
+            GalleryEntry(sam, np.array([engine.enrollment_sample(b).embedding], np.float32)),
+        ),
+    )
+    result = engine.recognize(decode_jpeg(_jpeg(demo_bgr)), gallery)
+    matched = {face.person_id for face in result.faces if face.status == FaceStatus.MATCHED}
+    assert matched == {alex, sam}
+    assert sum(face.status == FaceStatus.UNKNOWN for face in result.faces) == 4
+
+
 def test_blank_frame_is_no_face(engine) -> None:
     blank = decode_jpeg(_jpeg(np.full((480, 640, 3), 128, np.uint8)))
-    assert engine.recognize(blank, Gallery.empty(engine.model)).status == FrameStatus.NO_FACE
+    assert engine.recognize(blank, Gallery.empty(engine.model)).faces == []
     with pytest.raises(ApiError) as info:
         engine.enrollment_sample(blank)
     assert info.value.code == ErrorCode.NO_FACE
@@ -96,12 +116,12 @@ def test_enroll_then_recognize(engine, single_faces) -> None:
         ),
     )
     flipped = decode_jpeg(_jpeg(cv2.flip(a.bgr, 1)))
-    result = engine.recognize(flipped, gallery)
-    assert result.status == FrameStatus.MATCHED and result.person_id == alex
+    (face,) = engine.recognize(flipped, gallery).faces
+    assert face.status == FaceStatus.MATCHED and face.person_id == alex
 
     only_sam = Gallery(engine.model, gallery.entries[1:])
-    assert engine.recognize(a, only_sam).status == FrameStatus.UNKNOWN
-    assert engine.recognize(a, Gallery.empty(engine.model)).status == FrameStatus.UNKNOWN
+    assert engine.recognize(a, only_sam).faces[0].status == FaceStatus.UNKNOWN
+    assert engine.recognize(a, Gallery.empty(engine.model)).faces[0].status == FaceStatus.UNKNOWN
 
 
 def test_enrollment_endpoint_and_health(single_faces, tmp_path) -> None:
@@ -144,11 +164,11 @@ def test_enroll_save_recognize_delete_journey(single_faces, tmp_path) -> None:
         )
         assert created.status_code == 201, created.text
 
-        returning = post_frame("/api/vision/recognize", cv2.flip(a.bgr, 1))
+        (returning,) = post_frame("/api/vision/recognize", cv2.flip(a.bgr, 1))["faces"]
         assert returning["status"] == "matched" and returning["personId"] == person_id
-        stranger = post_frame("/api/vision/recognize", b.bgr)
+        (stranger,) = post_frame("/api/vision/recognize", b.bgr)["faces"]
         assert stranger["status"] == "unknown" and stranger["personId"] is None
 
         assert client.delete(f"/api/people/{person_id}").status_code == 200
-        forgotten = post_frame("/api/vision/recognize", a.bgr)
+        (forgotten,) = post_frame("/api/vision/recognize", a.bgr)["faces"]
         assert forgotten["status"] == "unknown"

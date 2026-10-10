@@ -26,17 +26,19 @@ import numpy as np
 from app.config import REPO_ROOT, Settings
 from app.contracts import (
     EXPECTED_EMBEDDING_DIMENSION,
+    MAX_FACES_PER_FRAME,
     ApiError,
     Box,
     EnrollmentSample,
     ErrorCode,
     FaceModel,
+    FaceResult,
+    FaceStatus,
     FrameResult,
-    FrameStatus,
 )
 from app.vision.gallery import Gallery
 from app.vision.image import DecodedImage
-from app.vision.matching import match_gallery
+from app.vision.matching import match_faces
 from app.vision.thresholds import (
     DETECTION_SIZE,
     DETECTION_THRESHOLD,
@@ -58,10 +60,9 @@ class FaceEngine(Protocol):
         ...
 
     def recognize(self, image: DecodedImage, gallery: Gallery) -> FrameResult:
-        """Detect faces and match a single face against the gallery.
-
-        Zero faces -> no_face; several -> multiple_faces; weak/ambiguous or
-        empty gallery -> unknown. Never raises for those outcomes.
+        """Detect every face (largest first, at most MAX_FACES_PER_FRAME) and match each
+        against the gallery. No faces -> empty list; weak/ambiguous or empty gallery ->
+        unknown; a person is matched to at most one face. Never raises for those outcomes.
         """
         ...
 
@@ -162,29 +163,29 @@ class InsightFaceEngine:
     def recognize(self, image: DecodedImage, gallery: Gallery) -> FrameResult:
         if gallery.model != self._model:
             raise ApiError(ErrorCode.MODEL_MISMATCH, "Gallery was built for a different model.")
-        size = {"frame_width": image.width, "frame_height": image.height}
         with self._lock:
             faces = self._detect(image)
-            if not faces:
-                return FrameResult(status=FrameStatus.NO_FACE, **size)
-            if len(faces) > 1:
-                return FrameResult(status=FrameStatus.MULTIPLE_FACES, **size)
-            face = faces[0]
-            box = self._box(face, image)
-            if face.kps is None:
-                return FrameResult(status=FrameStatus.UNKNOWN, box=box, **size)
-            query = self._embed(image, face)
-        decision = match_gallery(query, gallery)
-        if decision.person_id is None:
-            return FrameResult(status=FrameStatus.UNKNOWN, box=box, **size)
-        similarity = round(max(-1.0, min(1.0, float(decision.best_similarity))), 4)
-        return FrameResult(
-            status=FrameStatus.MATCHED,
-            person_id=decision.person_id,
-            similarity=similarity,
-            box=box,
-            **size,
-        )
+            faces.sort(
+                key=lambda f: float((f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1])), reverse=True
+            )
+            faces = [face for face in faces[:MAX_FACES_PER_FRAME] if face.kps is not None]
+            boxes = [self._box(face, image) for face in faces]
+            queries = [self._embed(image, face) for face in faces]
+        results = []
+        for box, decision in zip(boxes, match_faces(queries, gallery), strict=True):
+            if decision.person_id is None:
+                results.append(FaceResult(status=FaceStatus.UNKNOWN, box=box))
+            else:
+                similarity = round(max(-1.0, min(1.0, float(decision.best_similarity))), 4)
+                results.append(
+                    FaceResult(
+                        status=FaceStatus.MATCHED,
+                        person_id=decision.person_id,
+                        similarity=similarity,
+                        box=box,
+                    )
+                )
+        return FrameResult(faces=results, frame_width=image.width, frame_height=image.height)
 
     def enrollment_sample(self, image: DecodedImage) -> EnrollmentSample:
         with self._lock:
