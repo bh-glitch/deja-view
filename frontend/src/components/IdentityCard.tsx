@@ -1,8 +1,16 @@
-/** Who the camera sees (owner: Ishan). Phase 1a: fixture data or the Unknown state. */
+/** Who the camera sees (Ishan Phase 1a; Bhavya 2026-10-10). */
 import type { Person } from "@/lib/api-client";
 import { ComingSoonButton } from "@/components/ComingSoonButton";
 
-export function IdentityCard({ person, latestCue }: { person: Person | null; latestCue: string | null }) {
+export function IdentityCard({
+  person,
+  latestCue,
+  emptyText = "No one recognized yet.",
+}: {
+  person: Person | null;
+  latestCue: string | null;
+  emptyText?: string;
+}) {
   return (
     <section aria-labelledby="identity-heading" className="flex flex-col gap-2 rounded-lg border border-zinc-300 p-4 dark:border-zinc-700">
       <h2 id="identity-heading" className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
@@ -19,7 +27,7 @@ export function IdentityCard({ person, latestCue }: { person: Person | null; lat
       ) : (
         <>
           <p className="text-2xl font-bold">Unknown</p>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">No one recognized yet.</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">{emptyText}</p>
         </>
       )}
       <div>

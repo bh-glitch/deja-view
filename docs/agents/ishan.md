@@ -50,3 +50,8 @@ proxy. Expect `503 MODEL_UNAVAILABLE` until the vision engine lands; show it as 
 Replaces "press Listen to enroll". Implement the trigger state machine (unknown-stable
 → capture 3–5 samples → one ≤8 s listening window → **Save <name>?** one-tap confirm, Not now,
 cooldown, auto-listen toggle, disclosure text). Call `useAudioRecorder().start({ maxDurationMs: 8000 })`.
+
+## Update 2026-10-10 (human decision)
+Bhavya implemented stable identity, auto-enrollment (typed name), live people list and delete
+(PR from `bhavya/auto-enrollment`). Those frontend files are yours again after merge. Your next task
+is UI simplification (fewer buttons), plus wiring the voice prefill once Vansh's recorder lands.

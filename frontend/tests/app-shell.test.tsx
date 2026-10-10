@@ -9,40 +9,45 @@ function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
+function routeFetch(health: unknown, people: unknown) {
+  return vi.fn((url: string) =>
+    Promise.resolve(jsonResponse(url.startsWith("/api/health") ? health : people)),
+  );
+}
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
 
 describe("AppShell", () => {
-  it("shows the fixture banner, fixture people and identity in fixture mode", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(fixtures.health)));
+  it("shows the fixture banner and people from the backend in fixture mode", async () => {
+    vi.stubGlobal("fetch", routeFetch(fixtures.health, fixtures.peopleList));
     render(<AppShell />);
     expect(await screen.findByText("Fixture mode — synthetic data")).toBeTruthy();
-    expect(screen.getAllByText("Demo Alex").length).toBeGreaterThan(0);
-    expect(screen.getByText("Demo Sam")).toBeTruthy();
+    expect(await screen.findByText("Demo Alex")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Delete Demo Sam" })).toBeTruthy();
   });
 
-  it("does not show fixture data outside fixture mode", async () => {
+  it("shows no banner and an empty people state in live mode", async () => {
     const live = { ...fixtures.health, data: { ...fixtures.health.data, mode: "live" } };
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(live)));
+    const empty = { ...fixtures.peopleList, data: { people: [] } };
+    vi.stubGlobal("fetch", routeFetch(live, empty));
     render(<AppShell />);
     expect(await screen.findByText(/Backend: live/)).toBeTruthy();
     expect(screen.queryByText("Fixture mode — synthetic data")).toBeNull();
-    expect(screen.queryByText("Demo Alex")).toBeNull();
+    expect(await screen.findByText(/No one saved yet/)).toBeTruthy();
     expect(screen.getByText("Unknown")).toBeTruthy();
   });
 
-  it("starts with the camera off and placeholder controls disabled", () => {
+  it("starts with the camera off and only a single camera button", () => {
     vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => undefined)));
     render(<AppShell />);
     expect(screen.getByRole("button", { name: "Start camera" })).toHaveProperty("disabled", false);
-    expect(screen.getByRole("button", { name: "Stop camera" })).toHaveProperty("disabled", true);
-    for (const name of [/Who is this\?/, /Listen/, /Record conversation/, /Enroll new person/]) {
-      const button = screen.getByRole("button", { name });
-      expect(button).toHaveProperty("disabled", true);
-      expect(button.textContent).toContain("coming soon");
-    }
+    expect(screen.queryByRole("button", { name: "Stop camera" })).toBeNull();
+    expect(screen.getByText("Start the camera to recognize people.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Enroll new person/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /Who is this\?/ })).toHaveProperty("disabled", true);
   });
 });
 
