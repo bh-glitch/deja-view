@@ -32,23 +32,32 @@ Phase 2 notes (no interface change):
 
 ### ElevenLabs
 
-Account plan (reported by Vansh, **not verifiable with the current key**): **Creator** plan,
-activated with the hackathon coupon. Renewal date: **not yet recorded**; the API could not
-return it (see E1), so it has to be read from the ElevenLabs dashboard.
+Account plan: **Creator** (`tier=creator`, `status=active`, monthly billing), activated with the
+hackathon coupon (per Vansh). Credits refresh monthly; the next reset is **2026-11-10 19:17 UTC**
+(`next_character_count_reset_unix`; the API reports no separate renewal date). Overage billing is
+off (`can_extend_character_limit=false`, `max_credit_limit_extension=0`), so usage stops at the
+limit instead of charging more. The API's `has_used_creator_coupon_on_account=false` refers to
+ElevenLabs' own Creator first-month discount; the hackathon coupon itself isn't visible through
+the API.
+
+First run, 20:31–20:32 UTC:
 
 | Check | Result |
 |---|---|
-| E1 `GET /v1/user/subscription` (before and after) | **HTTP 401** `missing_permissions`: "The API key you used is missing the permission user_read". Tier, credits used/limit and reset date **not verified** |
-| E2 `GET /v1/models` | **HTTP 401** `missing_permissions`: missing `models_read`. Model list **not verified** by listing (the models were exercised directly below) |
-| E3 `GET /v1/voices/ogwqBH5bbF03DSbNiRNN` | **HTTP 400** `voice_not_found`: "A voice with ID 'ogwqBH5bbF03DSbNiRNN' was not found." (see note) |
+| E1 `GET /v1/user/subscription` (before and after) | **HTTP 401** `missing_permissions`: "The API key you used is missing the permission user_read" |
+| E2 `GET /v1/models` | **HTTP 401** `missing_permissions`: missing `models_read` |
+| E3 `GET /v1/voices/ogwqBH5bbF03DSbNiRNN` | **HTTP 400** `voice_not_found`: "A voice with ID 'ogwqBH5bbF03DSbNiRNN' was not found." |
 | E4 TTS `POST /v1/text-to-speech/ogwqBH5bbF03DSbNiRNN?output_format=mp3_44100_128`, `model_id=eleven_flash_v2_5`, 74-character fictional sentence | **HTTP 200**, `audio/mpeg`, 74,440 bytes; ID3 tag + MPEG-1 Layer III frame sync: **verified MP3**. `character-cost: 16` header. Latency 3.6 s |
 | E5 STT `POST /v1/speech-to-text`, multipart `file` (the E4 MP3) + `model_id=scribe_v2` | **HTTP 200**, non-empty `text`, `language_code=eng` (p=0.97), 4.6 s of audio; all 15 words matched the input sentence exactly. Latency 0.76 s |
 
-Voice note: TTS with the configured voice ID returns real audio, but the voice lookup reports
-`voice_not_found`. The ID is probably a shared/library voice that isn't saved in "My Voices" (or
-the key's voice permissions differ). Whether the E4 clip is the intended voice has **not yet been
-confirmed by listening**, and the lookup result still needs to be resolved before the voice is
-called verified.
+Re-run of the free checks only, 2026-10-10 20:48 UTC, after Vansh added `user_read` to the key
+and saved the voice to My Voices (no TTS/STT calls):
+
+| Check | Result |
+|---|---|
+| E1 `GET /v1/user/subscription` | **HTTP 200**: `creator`, `active`, **18 / 131,000** characters used (130,982 left), next reset 2026-11-10 19:17 UTC, monthly, no open invoices, no pending change |
+| E2 `GET /v1/models` | Still **HTTP 401** `missing_permissions`: missing `models_read`. Both models were exercised directly by E4/E5, so this only blocks listing |
+| E3 `GET /v1/voices/ogwqBH5bbF03DSbNiRNN` | **HTTP 200**: "Savvy - Warm, Grounded & Natural", category `professional`; `high_quality_base_model_ids` includes `eleven_flash_v2_5` |
 
 ### Results summary
 
@@ -56,18 +65,17 @@ called verified.
 |---|---|
 | Gemini `gemini-3.8-flash` structured output | **Works** (one real call) |
 | ElevenLabs STT `scribe_v2` | **Works** (one real call, synthetic clip) |
-| ElevenLabs TTS `eleven_flash_v2_5` + voice `ogwqBH5bbF03DSbNiRNN` | **Works** (one real call, verified MP3); voice metadata lookup fails |
-| ElevenLabs credits / plan / renewal | **Not verified**: key lacks `user_read` |
-| Gemini quota / tier | **Not verified**: check AI Studio |
+| ElevenLabs TTS `eleven_flash_v2_5` + voice `ogwqBH5bbF03DSbNiRNN` | **Works** (one real call, verified MP3); voice found in the account |
+| ElevenLabs credits / plan | **Verified**: Creator, 130,982 of 131,000 characters left, reset 2026-11-10 |
+| ElevenLabs model listing | **Not verified**: key lacks `models_read` (not a blocker) |
+| Gemini quota / tier | **Not verified**: check in AI Studio |
 
 No paid subscription was started or upgraded.
 
-### Blockers and requests (tracked in #3)
+### Open items (tracked in #3)
 
-1. The ElevenLabs key lacks `user_read` (and `models_read`), so credits can't be checked before
-   demo calls. Either the key owner adds those permissions in the ElevenLabs dashboard, or the
-   credits and renewal date are read from the dashboard by hand.
-2. The voice ID `ogwqBH5bbF03DSbNiRNN` works for TTS but isn't found by `GET /v1/voices/{id}`.
-   Confirm it's the intended voice, or add it to the account's voices.
+1. Optional: add `models_read` to the ElevenLabs key so the model list can be checked; the models
+   themselves already work.
+2. Gemini quota/tier: check in AI Studio.
 
 Failures observed and the user-facing recovery state are recorded with the Phase 2 provider code.
