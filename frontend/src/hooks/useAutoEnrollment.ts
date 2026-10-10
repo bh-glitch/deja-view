@@ -5,8 +5,8 @@
  * Steady unknown face -> capture 3-5 samples from the live camera -> "Save as ___?" card ->
  * one tap saves via createPerson. Nobody is saved without that tap. Samples, preview and
  * personId belong to one session; a visitor change or face loss during capture aborts it.
- * The voice introduction will prefill the name once Vansh's recorder/STT land; until
- * then the name is typed.
+ * begin() resolves true once the card is ready for a name, so the controller can open the
+ * voice-introduction window (useVoiceIntroduction); typing the name always works too.
  */
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
@@ -98,9 +98,9 @@ export function useAutoEnrollment(videoRef: RefObject<HTMLVideoElement | null>, 
     return !untilFaceLeaves || Date.now() >= until;
   }, [state.kind]);
 
-  const begin = useCallback(async () => {
+  const begin = useCallback(async (): Promise<boolean> => {
     const video = videoRef.current;
-    if (!video || session.current) return;
+    if (!video || session.current) return false;
     const controller = new AbortController();
     abortRef.current = controller;
     const current: Session = { personId: crypto.randomUUID(), samples: [], previewUrl: null };
@@ -111,7 +111,7 @@ export function useAutoEnrollment(videoRef: RefObject<HTMLVideoElement | null>, 
     let failures = 0;
     let lastFrame: Blob | null = null;
     while (current.samples.length < TARGET_SAMPLES && failures < MAX_SAMPLE_FAILURES) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) return false;
       try {
         const frame = await captureJpegFrame(video, canvas);
         if (!frame) {
@@ -121,21 +121,21 @@ export function useAutoEnrollment(videoRef: RefObject<HTMLVideoElement | null>, 
           const previous = current.samples.at(-1);
           if (previous && boxJumped(previous.box, sample.box)) {
             abort("The person changed during capture. Try again.");
-            return;
+            return false;
           }
           current.samples.push(sample);
           lastFrame = frame;
           setState({ kind: "capturing", captured: current.samples.length });
         }
       } catch (error) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return false;
         if (error instanceof ApiClientError && error.code === "MULTIPLE_FACES") {
           abort("More than one face is visible. Enrollment needs one person.");
-          return;
+          return false;
         }
         if (!(error instanceof ApiClientError) || !error.retryable) {
           abort(`Could not capture the face: ${messageFor(error)}`);
-          return;
+          return false;
         }
         failures += 1;
       }
@@ -143,10 +143,11 @@ export function useAutoEnrollment(videoRef: RefObject<HTMLVideoElement | null>, 
     }
     if (current.samples.length < MIN_SAMPLES) {
       abort("Could not get a clear view of the face. Face the camera and try again.");
-      return;
+      return false;
     }
     current.previewUrl = lastFrame ? URL.createObjectURL(lastFrame) : null;
     setState({ kind: "naming", previewUrl: current.previewUrl, saving: false, error: null });
+    return true;
   }, [abort, videoRef]);
 
   const save = useCallback(

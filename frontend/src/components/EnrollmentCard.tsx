@@ -1,22 +1,122 @@
 "use client";
-/** "Save as ___?" card for auto-enrollment (Bhavya, 2026-10-10). One tap saves; Not now discards. */
+/**
+ * "Save as ___?" card for auto-enrollment (Bhavya, 2026-10-10). One tap saves; Not now discards.
+ * Voice introduction (Vansh, human-approved 2026-10-10): the heard name/relationship prefill the
+ * fields, which stay editable; typed text always wins. Nothing is saved without the Save tap.
+ */
 import { useState } from "react";
 
 import { MIN_SAMPLES, TARGET_SAMPLES, type EnrollmentState } from "@/hooks/useAutoEnrollment";
+import type { VoiceIntroductionState } from "@/hooks/useVoiceIntroduction";
+
+export interface EnrollmentVoiceProps {
+  state: VoiceIntroductionState;
+  autoListen: boolean;
+  onAutoListenChange: (enabled: boolean) => void;
+  onListen: () => void;
+  onFinish: () => void;
+  onCancel: () => void;
+  /** Re-send the already transcribed words to Gemini after a failed draft. */
+  onRetryDraft?: () => void;
+}
+
+const VOICE_DISCLOSURE =
+  "Introduction audio is sent to ElevenLabs for transcription. The name is found by the AI shown with each draft (local AI keeps the text on this laptop). Face images are never sent.";
+
+function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
+  const { state } = voice;
+  const busy = state.kind === "transcribing" || state.kind === "understanding";
+  return (
+    <div className="flex flex-col gap-2 rounded-md bg-zinc-100 p-3 text-sm dark:bg-zinc-900" aria-live="polite">
+      {state.kind === "listening" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 font-medium text-red-700 dark:text-red-400">
+            <span aria-hidden className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-600" />
+            Listening for an introduction… {Math.min(Math.floor(state.elapsedMs / 1000), state.limitMs / 1000)}s /{" "}
+            {state.limitMs / 1000}s
+          </span>
+          <button type="button" onClick={voice.onFinish} className="rounded-md bg-zinc-800 px-2 py-1 text-xs text-white">
+            Done
+          </button>
+          <button type="button" onClick={voice.onCancel} className="rounded-md border border-zinc-400 px-2 py-1 text-xs">
+            Cancel
+          </button>
+        </div>
+      )}
+      {state.kind === "transcribing" && <p>Transcribing…</p>}
+      {state.kind === "understanding" && (
+        <p>
+          Heard “{state.transcript}”. Finding the name…
+        </p>
+      )}
+      {state.kind === "heard" && (
+        <p className="text-emerald-800 dark:text-emerald-300">
+          Heard “{state.draft.nameEvidence ?? state.transcript}”. Check the name below, then save.{" "}
+          <span className="text-xs text-zinc-500">Found by {state.provider.label}.</span>
+        </p>
+      )}
+      {state.kind === "no-name" && (
+        <p className="text-amber-800 dark:text-amber-300">
+          {state.transcript ? `Heard “${state.transcript}”. ` : ""}
+          {state.message}
+        </p>
+      )}
+      {state.kind === "error" && (
+        <p role="alert" className="text-red-700 dark:text-red-400">
+          {state.transcript ? `Heard “${state.transcript}”. ` : ""}
+          {state.message}
+        </p>
+      )}
+      {(state.kind === "idle" || state.kind === "heard" || state.kind === "no-name" || state.kind === "error") && (
+        <div className="flex gap-2">
+          {state.kind === "error" && state.transcript && voice.onRetryDraft && (
+            <button
+              type="button"
+              onClick={voice.onRetryDraft}
+              className="rounded-md bg-zinc-800 px-2 py-1 text-xs text-white"
+            >
+              Try again
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={voice.onListen}
+            disabled={busy}
+            className="rounded-md border border-zinc-400 px-2 py-1 text-xs"
+          >
+            🎤 {state.kind === "idle" ? "Listen for name" : "Listen again"}
+          </button>
+        </div>
+      )}
+      <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+        <input
+          type="checkbox"
+          checked={voice.autoListen}
+          onChange={(event) => voice.onAutoListenChange(event.target.checked)}
+        />
+        Auto-listen for introductions
+      </label>
+      <p className="text-xs text-zinc-500">{VOICE_DISCLOSURE}</p>
+    </div>
+  );
+}
 
 export function EnrollmentCard({
   state,
   onSave,
   onDismiss,
   mirrored = true,
+  voice,
 }: {
   state: EnrollmentState;
   mirrored?: boolean;
   onSave: (name: string, relationship: string) => void;
   onDismiss: () => void;
+  voice?: EnrollmentVoiceProps;
 }) {
-  const [name, setName] = useState("");
-  const [relationship, setRelationship] = useState("");
+  // null = not typed yet, so a heard introduction can fill the field.
+  const [typedName, setTypedName] = useState<string | null>(null);
+  const [typedRelationship, setTypedRelationship] = useState<string | null>(null);
 
   if (state.kind === "idle") {
     return state.notice ? (
@@ -40,6 +140,11 @@ export function EnrollmentCard({
     );
   }
 
+  const heard = voice?.state.kind === "heard" ? voice.state.draft : null;
+  const name = typedName ?? heard?.displayName ?? "";
+  const relationship = typedRelationship ?? heard?.relationship ?? "";
+  const listening = voice?.state.kind === "listening";
+
   return (
     <form
       aria-labelledby="enroll-heading"
@@ -50,7 +155,7 @@ export function EnrollmentCard({
       }}
     >
       <h2 id="enroll-heading" className="text-lg font-semibold">
-        New face. Save this person?
+        {name.trim() ? `Save ${name.trim()}?` : "New face. Save this person?"}
       </h2>
       <div className="flex gap-3">
         {state.previewUrl && (
@@ -67,11 +172,11 @@ export function EnrollmentCard({
           <label className="flex flex-col text-sm">
             Name
             <input
-              autoFocus
+              autoFocus={!voice}
               required
               maxLength={80}
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => setTypedName(event.target.value)}
               className="rounded-md border border-zinc-400 px-2 py-1 dark:bg-zinc-900"
               placeholder="e.g. Bhavya"
             />
@@ -81,16 +186,18 @@ export function EnrollmentCard({
             <input
               maxLength={120}
               value={relationship}
-              onChange={(event) => setRelationship(event.target.value)}
+              onChange={(event) => setTypedRelationship(event.target.value)}
               className="rounded-md border border-zinc-400 px-2 py-1 dark:bg-zinc-900"
               placeholder="e.g. teammate"
             />
           </label>
         </div>
       </div>
-      <p className="text-xs text-zinc-500">
-        Voice introductions (“Hey, I’m …”) will fill this in once speech is connected. Type the name for now.
-      </p>
+      {voice ? (
+        <VoicePanel voice={voice} />
+      ) : (
+        <p className="text-xs text-zinc-500">Type the name to save this person.</p>
+      )}
       {state.error && (
         <p role="alert" className="text-sm text-red-700 dark:text-red-400">
           {state.error}
@@ -99,7 +206,7 @@ export function EnrollmentCard({
       <div className="flex gap-2">
         <button
           type="submit"
-          disabled={state.saving || !name.trim()}
+          disabled={state.saving || listening || !name.trim()}
           className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
         >
           {state.saving ? "Saving…" : name.trim() ? `Save ${name.trim()}` : "Save"}
