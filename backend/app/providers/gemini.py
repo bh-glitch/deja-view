@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 from typing import TypeVar
 
 import httpx
@@ -65,6 +66,21 @@ def _wrap(transcript: str) -> str:
     return f"{TRANSCRIPT_START}\n{safe}\n{TRANSCRIPT_END}"
 
 
+def _retry_delay_seconds(exc: errors.APIError) -> int | None:
+    """Read Google's RetryInfo (e.g. "23s" or "23.4s") from a 429, if present."""
+    body = exc.details if isinstance(exc.details, dict) else {}
+    error = body.get("error") if isinstance(body.get("error"), dict) else {}
+    for detail in error.get("details") or []:
+        if isinstance(detail, dict) and str(detail.get("@type", "")).endswith("RetryInfo"):
+            raw = str(detail.get("retryDelay", "")).removesuffix("s")
+            try:
+                seconds = math.ceil(float(raw))
+            except ValueError:
+                return None
+            return seconds if 0 < seconds <= 3600 else None
+    return None
+
+
 def _provider_error(exc: Exception) -> ApiError:
     """Map SDK/transport failures to sanitized ApiErrors (no key, no raw provider body)."""
     if isinstance(exc, httpx.TimeoutException):
@@ -72,8 +88,11 @@ def _provider_error(exc: Exception) -> ApiError:
     if isinstance(exc, errors.APIError):
         logger.warning("Gemini call failed: HTTP %s %s", exc.code, exc.status)
         if exc.code == 429:
+            wait = _retry_delay_seconds(exc)
+            when = f"in about {wait} seconds" if wait else "in about a minute"
             return ApiError(
-                ErrorCode.PROVIDER_RATE_LIMITED, "The AI service is busy; try again in a minute."
+                ErrorCode.PROVIDER_RATE_LIMITED,
+                f"Gemini (the AI) reached its per-minute limit. Press Try again {when}.",
             )
         if exc.code in (504, 408):
             return ApiError(ErrorCode.PROVIDER_TIMEOUT, "The AI service timed out; try again.")

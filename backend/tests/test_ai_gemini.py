@@ -154,3 +154,31 @@ def test_repeated_overload_fails_after_one_retry(monkeypatch, settings) -> None:
     assert caught.value.retryable is True
     assert "overloaded" in caught.value.message
     assert len(models.calls) == 2
+
+
+def test_rate_limit_message_uses_googles_retry_delay(monkeypatch, settings) -> None:
+    limited = errors.APIError(
+        429,
+        {
+            "error": {
+                "code": 429,
+                "status": "RESOURCE_EXHAUSTED",
+                "details": [
+                    {"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": "22.4s"}
+                ],
+            }
+        },
+    )
+    models = _install(monkeypatch, [limited, "never used"])
+    with pytest.raises(ApiError) as caught:
+        _run(settings)
+    assert caught.value.code == "PROVIDER_RATE_LIMITED"
+    assert "in about 23 seconds" in caught.value.message
+    assert len(models.calls) == 1
+
+
+def test_rate_limit_without_retry_info_says_a_minute(monkeypatch, settings) -> None:
+    _install(monkeypatch, [_api_error(429)])
+    with pytest.raises(ApiError) as caught:
+        _run(settings)
+    assert "in about a minute" in caught.value.message

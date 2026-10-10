@@ -109,3 +109,12 @@ automatically. The exact limits are still to be checked in AI Studio.
 | `POST /api/audio/transcribe` | The synthetic MP3 from Phase 1 (E4) | **200**, transcript "This is a forget not test. Demo Alex is your cousin. You talked about tea", 0.68 s |
 | `POST /api/audio/transcribe` | Zero-byte upload | **422 `EMPTY_AUDIO`** (no provider call) |
 | `POST /api/ai/introduction` | "Hey, nice to meet you! My name is Demo Alex, I am Sam's cousin." | **200**, `intent=introduction`, `displayName="Demo Alex"`, `relationship="Sam's cousin"`, both evidence spans literal; 3.4 s |
+
+### Gemini rate limit during real use (2026-10-10)
+
+During live browser testing (about 30 Gemini calls over the session, several within a minute),
+Gemini returned **HTTP 429 `RESOURCE_EXHAUSTED`** four times and **HTTP 504
+`DEADLINE_EXCEEDED`** once. A single call shortly afterwards succeeded, so the limit is per
+minute, not per day. The 429 message now gives Google's `RetryInfo` delay, and the UI's
+**Try again** resends the kept transcript without re-recording. Raising the limit needs a
+paid (billing-enabled) Gemini tier, which is a human decision; nothing was upgraded.

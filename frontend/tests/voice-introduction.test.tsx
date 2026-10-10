@@ -144,15 +144,17 @@ describe("useVoiceIntroduction", () => {
 
   it("explains a rate limit", async () => {
     mocks.transcribeAudio.mockResolvedValue("Hi, I'm Demo Alex.");
-    mocks.draftIntroduction.mockRejectedValue(new ApiClientError("PROVIDER_RATE_LIMITED", "busy", 429, true, null));
+    mocks.draftIntroduction.mockRejectedValue(
+      new ApiClientError("PROVIDER_RATE_LIMITED", "Gemini (the AI) reached its per-minute limit. Press Try again in about 23 seconds.", 429, true, null),
+    );
     const { result } = renderHook(() => useVoiceIntroduction());
     await act(() => result.current.listen());
     await act(async () => {
       result.current.finish();
     });
     await flush();
-    expect(result.current.state).toMatchObject({ kind: "error" });
-    expect((result.current.state as { message: string }).message).toMatch(/busy/);
+    expect(result.current.state).toMatchObject({ kind: "error", transcript: "Hi, I'm Demo Alex." });
+    expect((result.current.state as { message: string }).message).toMatch(/per-minute limit.*23 seconds/);
   });
 
   it("keeps the transcript after a Gemini failure and retries without re-recording", async () => {

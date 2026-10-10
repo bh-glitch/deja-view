@@ -41,7 +41,8 @@ type Phase = "idle" | "listening" | "processing";
 
 export function describeVoiceError(error: unknown): string {
   if (error instanceof ApiClientError) {
-    if (error.code === "PROVIDER_RATE_LIMITED") return "The speech service is busy. Wait a minute, then listen again.";
+    // The backend names the busy service (ElevenLabs or Gemini) and how long to wait.
+    if (error.code === "PROVIDER_RATE_LIMITED") return error.message;
     if (error.code === "PROVIDER_NOT_CONFIGURED") return "Speech is not configured on the backend.";
     if (error.code === "PROVIDER_TIMEOUT") return "The speech service took too long. Listen again.";
     if (error.code === "NETWORK_ERROR") return "The backend is unreachable.";
