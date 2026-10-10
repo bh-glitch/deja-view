@@ -619,29 +619,12 @@
         "title": "FaceModelHealth",
         "type": "object"
       },
-      "FrameResult": {
+      "FaceResult": {
         "additionalProperties": false,
-        "description": "Single-frame recognition result. ``matched`` means this frame passed the\nacceptance rules only; the UI must still require stable consecutive matches.",
+        "description": "One detected face. ``matched`` means it passed the acceptance rules in this frame\nonly; the UI must still require stable consecutive matches before showing a name.",
         "properties": {
           "box": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Box"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "frameHeight": {
-            "exclusiveMinimum": 0.0,
-            "title": "Frameheight",
-            "type": "integer"
-          },
-          "frameWidth": {
-            "exclusiveMinimum": 0.0,
-            "title": "Framewidth",
-            "type": "integer"
+            "$ref": "#/components/schemas/Box"
           },
           "personId": {
             "anyOf": [
@@ -670,14 +653,51 @@
             "title": "Similarity"
           },
           "status": {
-            "$ref": "#/components/schemas/FrameStatus"
+            "$ref": "#/components/schemas/FaceStatus"
           }
         },
         "required": [
           "status",
           "personId",
           "similarity",
-          "box",
+          "box"
+        ],
+        "title": "FaceResult",
+        "type": "object"
+      },
+      "FaceStatus": {
+        "enum": [
+          "unknown",
+          "matched"
+        ],
+        "title": "FaceStatus",
+        "type": "string"
+      },
+      "FrameResult": {
+        "additionalProperties": false,
+        "description": "All faces in one frame (largest first, at most MAX_FACES_PER_FRAME). An empty\nlist means no face. A person is matched to at most one face per frame.",
+        "properties": {
+          "faces": {
+            "items": {
+              "$ref": "#/components/schemas/FaceResult"
+            },
+            "maxItems": 8,
+            "title": "Faces",
+            "type": "array"
+          },
+          "frameHeight": {
+            "exclusiveMinimum": 0.0,
+            "title": "Frameheight",
+            "type": "integer"
+          },
+          "frameWidth": {
+            "exclusiveMinimum": 0.0,
+            "title": "Framewidth",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "faces",
           "frameWidth",
           "frameHeight"
         ],
@@ -708,16 +728,6 @@
         ],
         "title": "FrameResultResponse",
         "type": "object"
-      },
-      "FrameStatus": {
-        "enum": [
-          "no_face",
-          "multiple_faces",
-          "unknown",
-          "matched"
-        ],
-        "title": "FrameStatus",
-        "type": "string"
       },
       "Health": {
         "additionalProperties": false,

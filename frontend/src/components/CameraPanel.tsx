@@ -7,6 +7,7 @@ import type { RecognitionStatus } from "@/hooks/useRecognitionLoop";
 import type { Box } from "@/lib/api-client";
 
 export interface FaceOverlay {
+  key: number;
   box: Box;
   frameWidth: number;
   frameHeight: number;
@@ -14,14 +15,24 @@ export interface FaceOverlay {
   tone: "known" | "unknown";
 }
 
+// Boxes are in unmirrored frame pixels; the preview is mirrored, so flip x.
+function boxStyle({ box, frameWidth, frameHeight }: FaceOverlay) {
+  return {
+    left: `${((frameWidth - box.x - box.width) / frameWidth) * 100}%`,
+    top: `${(box.y / frameHeight) * 100}%`,
+    width: `${(box.width / frameWidth) * 100}%`,
+    height: `${(box.height / frameHeight) * 100}%`,
+  };
+}
+
 function statusText(status: RecognitionStatus): string {
   if (status.kind === "waiting") return "Waiting for first frame…";
   if (status.kind === "error") return `Error: ${status.text}`;
   const { result, latencyMs } = status;
-  const parts = [`Frame: ${result.status}`];
-  if (result.similarity !== null) parts.push(`similarity ${result.similarity.toFixed(3)}`);
-  parts.push(`${latencyMs} ms`);
-  return parts.join(" · ");
+  const matched = result.faces.filter((face) => face.status === "matched").length;
+  const faces = result.faces.length;
+  if (faces === 0) return `No face · ${latencyMs} ms`;
+  return `${faces} face${faces === 1 ? "" : "s"} · ${matched} matched · ${latencyMs} ms`;
 }
 
 export function CameraPanel({
@@ -30,7 +41,7 @@ export function CameraPanel({
   onStart,
   onStop,
   status,
-  overlay,
+  overlays,
   paused,
   children,
 }: {
@@ -39,18 +50,11 @@ export function CameraPanel({
   onStart: () => void;
   onStop: () => void;
   status: RecognitionStatus;
-  overlay: FaceOverlay | null;
+  overlays: FaceOverlay[];
   paused: boolean;
   children?: ReactNode;
 }) {
   const running = camera.kind === "live" || camera.kind === "starting";
-  // Boxes are in unmirrored frame pixels; the preview is mirrored, so flip x.
-  const boxStyle = overlay && {
-    left: `${((overlay.frameWidth - overlay.box.x - overlay.box.width) / overlay.frameWidth) * 100}%`,
-    top: `${(overlay.box.y / overlay.frameHeight) * 100}%`,
-    width: `${(overlay.box.width / overlay.frameWidth) * 100}%`,
-    height: `${(overlay.box.height / overlay.frameHeight) * 100}%`,
-  };
 
   return (
     <section aria-labelledby="camera-heading" className="flex flex-col gap-3 rounded-lg border border-zinc-300 p-4 dark:border-zinc-700">
@@ -74,21 +78,23 @@ export function CameraPanel({
         <div className="relative">
           {/* Preview is mirrored for the user; captured frames are not. */}
           <video ref={videoRef} muted playsInline className="block h-auto w-full" style={{ transform: "scaleX(-1)" }} />
-          {camera.kind === "live" && overlay && boxStyle && (
-            <div
-              aria-hidden
-              className={`absolute rounded-md border-2 ${overlay.tone === "known" ? "border-emerald-400" : "border-amber-400"}`}
-              style={boxStyle}
-            >
-              <span
-                className={`absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold ${
-                  overlay.tone === "known" ? "bg-emerald-400 text-emerald-950" : "bg-amber-400 text-amber-950"
-                }`}
+          {camera.kind === "live" &&
+            overlays.map((overlay) => (
+              <div
+                key={overlay.key}
+                aria-hidden
+                className={`absolute rounded-md border-2 ${overlay.tone === "known" ? "border-emerald-400" : "border-amber-400"}`}
+                style={boxStyle(overlay)}
               >
-                {overlay.label}
-              </span>
-            </div>
-          )}
+                <span
+                  className={`absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold ${
+                    overlay.tone === "known" ? "bg-emerald-400 text-emerald-950" : "bg-amber-400 text-amber-950"
+                  }`}
+                >
+                  {overlay.label}
+                </span>
+              </div>
+            ))}
         </div>
         {camera.kind !== "live" && (
           <p className="flex aspect-video items-center justify-center p-4 text-center text-sm text-zinc-300">

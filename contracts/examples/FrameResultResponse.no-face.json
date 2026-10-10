@@ -1,10 +1,7 @@
 {
   "ok": true,
   "data": {
-    "status": "no_face",
-    "personId": null,
-    "similarity": null,
-    "box": null,
+    "faces": [],
     "frameWidth": 640,
     "frameHeight": 480
   },

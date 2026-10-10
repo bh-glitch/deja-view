@@ -444,16 +444,12 @@ export interface components {
             ready: boolean;
         };
         /**
-         * FrameResult
-         * @description Single-frame recognition result. ``matched`` means this frame passed the
-         *     acceptance rules only; the UI must still require stable consecutive matches.
+         * FaceResult
+         * @description One detected face. ``matched`` means it passed the acceptance rules in this frame
+         *     only; the UI must still require stable consecutive matches before showing a name.
          */
-        FrameResult: {
-            box: components["schemas"]["Box"] | null;
-            /** Frameheight */
-            frameHeight: number;
-            /** Framewidth */
-            frameWidth: number;
+        FaceResult: {
+            box: components["schemas"]["Box"];
             /** Personid */
             personId: string | null;
             /**
@@ -461,7 +457,25 @@ export interface components {
              * @description Cosine similarity; not a probability.
              */
             similarity: number | null;
-            status: components["schemas"]["FrameStatus"];
+            status: components["schemas"]["FaceStatus"];
+        };
+        /**
+         * FaceStatus
+         * @enum {string}
+         */
+        FaceStatus: "unknown" | "matched";
+        /**
+         * FrameResult
+         * @description All faces in one frame (largest first, at most MAX_FACES_PER_FRAME). An empty
+         *     list means no face. A person is matched to at most one face per frame.
+         */
+        FrameResult: {
+            /** Faces */
+            faces: components["schemas"]["FaceResult"][];
+            /** Frameheight */
+            frameHeight: number;
+            /** Framewidth */
+            frameWidth: number;
         };
         /** FrameResultResponse */
         FrameResultResponse: {
@@ -475,11 +489,6 @@ export interface components {
             /** Requestid */
             requestId: string;
         };
-        /**
-         * FrameStatus
-         * @enum {string}
-         */
-        FrameStatus: "no_face" | "multiple_faces" | "unknown" | "matched";
         /** Health */
         Health: {
             credentials: components["schemas"]["CredentialPresence"];

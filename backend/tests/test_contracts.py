@@ -64,23 +64,38 @@ def test_person_rejects_invalid(overrides) -> None:
         contracts.Person.model_validate(_person(**overrides))
 
 
-def test_frame_result_non_matched_cannot_carry_identity() -> None:
+BOX = {"x": 0, "y": 0, "width": 1, "height": 1}
+PID = "3f1d0c8e-7c5a-4a5e-9a59-2f0f2d7f1a11"
+
+
+def _frame(*faces) -> dict:
+    return {"faces": list(faces), "frameWidth": 10, "frameHeight": 10}
+
+
+def test_unknown_face_cannot_carry_identity() -> None:
     with pytest.raises(ValidationError):
         contracts.FrameResult.model_validate(
-            {
-                "status": "unknown",
-                "personId": "3f1d0c8e-7c5a-4a5e-9a59-2f0f2d7f1a11",
-                "box": {"x": 0, "y": 0, "width": 1, "height": 1},
-                "frameWidth": 10,
-                "frameHeight": 10,
-            }
+            _frame({"status": "unknown", "personId": PID, "box": BOX})
         )
 
 
-def test_frame_result_matched_requires_identity() -> None:
+def test_matched_face_requires_identity() -> None:
+    with pytest.raises(ValidationError):
+        contracts.FrameResult.model_validate(_frame({"status": "matched", "box": BOX}))
+
+
+def test_person_matched_to_at_most_one_face() -> None:
+    face = {"status": "matched", "personId": PID, "similarity": 0.7, "box": BOX}
+    with pytest.raises(ValidationError):
+        contracts.FrameResult.model_validate(_frame(face, face))
+
+
+def test_face_count_is_bounded() -> None:
+    unknown = {"status": "unknown", "box": BOX}
+    contracts.FrameResult.model_validate(_frame(*[unknown] * contracts.MAX_FACES_PER_FRAME))
     with pytest.raises(ValidationError):
         contracts.FrameResult.model_validate(
-            {"status": "matched", "frameWidth": 10, "frameHeight": 10}
+            _frame(*[unknown] * (contracts.MAX_FACES_PER_FRAME + 1))
         )
 
 
@@ -101,9 +116,7 @@ def test_create_person_requires_three_to_five_matching_embeddings() -> None:
                 {**raw, "embeddings": [raw["embeddings"][0]] * count}
             )
     with pytest.raises(ValidationError):
-        contracts.CreatePersonRequest.model_validate(
-            {**raw, "embeddings": [[0.1] * 10] * 3}
-        )
+        contracts.CreatePersonRequest.model_validate({**raw, "embeddings": [[0.1] * 10] * 3})
 
 
 def test_memory_draft_limits() -> None:

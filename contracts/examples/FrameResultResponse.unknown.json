@@ -1,15 +1,19 @@
 {
   "ok": true,
   "data": {
-    "status": "unknown",
-    "personId": null,
-    "similarity": null,
-    "box": {
-      "x": 212.0,
-      "y": 96.5,
-      "width": 180.0,
-      "height": 220.0
-    },
+    "faces": [
+      {
+        "status": "unknown",
+        "personId": null,
+        "similarity": null,
+        "box": {
+          "x": 212.0,
+          "y": 96.5,
+          "width": 180.0,
+          "height": 220.0
+        }
+      }
+    ],
     "frameWidth": 640,
     "frameHeight": 480
   },

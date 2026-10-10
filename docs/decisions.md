@@ -14,8 +14,9 @@ Routine choices made in the scaffold. Changes go through Bhavya.
 - Limits not fixed by the README: fact text <= 240 chars, evidence quotes <= 300.
 - `FaceModel` identity = `packName` + `recognitionFile` + `recognitionSha256` +
   `dimension` + `normalization ("l2")`. Vectors are comparable only if all equal.
-- `FrameResult`: `matched` requires personId+similarity+box; `unknown` requires a
-  box and no identity; `no_face`/`multiple_faces` carry neither box nor identity.
+- `FrameResult` (multi-face, 2026-10-10): `faces[]` of `FaceResult`; `matched` requires
+  personId+similarity, `unknown` carries no identity; every face has a box; at most 8 faces;
+  a personId appears on at most one face per frame.
 - Success: `{ok:true,data,requestId}`. Errors: `{ok:false,error:{code,message,retryable},requestId}`.
   Every response also carries an `X-Request-ID` header. Error codes, HTTP statuses
   and retryability are frozen in `ERROR_STATUS`.
@@ -108,3 +109,15 @@ and the `AppShell` controller (constants: 3 stable matches, 4 steady unknown fra
 samples, 30 s cooldown). **Not yet implemented:** the 8 s listening window, voice name prefill, the
 auto-listen toggle and the provider disclosure text. They need Vansh's recorder/STT/introduction; until
 then the name is typed into the same confirm card. These files return to Ishan's ownership after merge.
+
+## Multi-face recognition (human decision, 2026-10-10)
+
+Replaces "one visitor at a time / multiple faces name nobody".
+- Backend: detect all faces, keep the 8 largest, embed and match each independently with the
+  same thresholds. If several faces match one person, only the strongest keeps the name.
+- Frontend: per-face tracks matched by position (a jump larger than 0.6× the box size = new
+  track). Each track needs 3 consecutive matches to show a name and clears on unknown or face loss.
+  Overlay boxes are drawn per face; one identity card per recognized person.
+- Enrollment is unchanged: it auto-starts only for a lone steady unknown face, and the
+  sample endpoint still rejects frames with several faces (`MULTIPLE_FACES`).
+- Cost: about 50 ms per extra face on the M3 CPU (6 faces ≈ 360–410 ms per frame).
