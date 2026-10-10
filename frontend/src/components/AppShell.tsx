@@ -5,16 +5,20 @@
  * face, live people list with delete, and the recognized person's latest cue.
  * Voice introduction (Vansh, human-approved 2026-10-10): after capture, one 8 s listening
  * window prefills the name via ElevenLabs STT + Gemini; the user still taps Save.
+ * Conversation memory (Vansh, human-approved): "Record conversation" on a recognized person
+ * records up to 60 s, drafts a reviewed reminder, and saves it as that person's latest cue.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CameraPanel, type FaceOverlay } from "@/components/CameraPanel";
+import { ConversationPanel } from "@/components/ConversationPanel";
 import { EnrollmentCard } from "@/components/EnrollmentCard";
 import { FixtureModeBanner } from "@/components/FixtureModeBanner";
 import { IdentityCard } from "@/components/IdentityCard";
 import { PeopleList } from "@/components/PeopleList";
 import { useAutoEnrollment } from "@/hooks/useAutoEnrollment";
 import { useCamera } from "@/hooks/useCamera";
+import { useConversationMemory } from "@/hooks/useConversationMemory";
 import { useRecognitionLoop } from "@/hooks/useRecognitionLoop";
 import { useVoiceIntroduction } from "@/hooks/useVoiceIntroduction";
 import {
@@ -103,6 +107,19 @@ export function AppShell() {
     if (ready && autoListenRef.current) await voice.listen();
   }, [enrollment, voice]);
 
+  // A saved conversation refreshes that person's details so the new cue shows at once.
+  const conversation = useConversationMemory((personId) => {
+    setDetails((current) => {
+      const next = { ...current };
+      delete next[personId];
+      return next;
+    });
+  });
+  const conversationActiveRef = useRef(false);
+  useEffect(() => {
+    conversationActiveRef.current = conversation.active;
+  }, [conversation.active]);
+
   const dismissEnrollment = useCallback(() => {
     voice.cancel();
     enrollment.dismiss();
@@ -115,7 +132,8 @@ export function AppShell() {
       setTracker(next);
       setLastResult(result);
       if (result.faces.length === 0) enrollment.noteFaceLeft();
-      if (shouldStartEnrollment(next) && enrollment.canAutoStart()) {
+      // Never open an enrollment listening window during a conversation recording.
+      if (shouldStartEnrollment(next) && enrollment.canAutoStart() && !conversationActiveRef.current) {
         trackerRef.current = initialTracker;
         setTracker(initialTracker);
         void startEnrollment();
@@ -264,10 +282,23 @@ export function AppShell() {
                 onRetryDraft: voice.retryDraft,
               }}
             />
+            <ConversationPanel
+              state={conversation.state}
+              onStop={conversation.stop}
+              onRetryDraft={conversation.retryDraft}
+              onSave={(edited) => void conversation.save(edited)}
+              onDiscard={conversation.discard}
+            />
             {!naming &&
               (recognized.length > 0 ? (
                 recognized.map((item) => (
-                  <IdentityCard key={item.person.id} person={item.person} latestCue={item.latestCue} />
+                  <IdentityCard
+                    key={item.person.id}
+                    person={item.person}
+                    latestCue={item.latestCue}
+                    onRecordConversation={() => void conversation.start(item.person)}
+                    recordDisabled={conversation.active || voice.state.kind === "listening"}
+                  />
                 ))
               ) : (
                 <IdentityCard person={null} latestCue={null} emptyText={emptyIdentityText(lastResult, cameraLive)} />

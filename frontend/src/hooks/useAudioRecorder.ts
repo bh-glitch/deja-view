@@ -12,7 +12,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { isSpeechPlaying, setRecording } from "@/lib/audio/audio-lock";
+import { isRecording, isSpeechPlaying, setRecording } from "@/lib/audio/audio-lock";
 import {
   RECORDING_BYTES_GUARD,
   type RecordedAudio,
@@ -157,6 +157,10 @@ export function useAudioRecorder(): AudioRecorder {
 
       if (isSpeechPlaying()) {
         fail("Wait for the spoken reminder to finish before recording.");
+        return;
+      }
+      if (isRecording()) {
+        fail("Another recording is already in progress.");
         return;
       }
       const mimeType = pickRecordingMimeType();
