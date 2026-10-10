@@ -87,3 +87,25 @@ startup: the engine must load the local directory with
   Next.js to 14, so it is intentionally not applied.
 - Pytest shows one Starlette deprecation warning about `httpx` inside `TestClient`.
   It is harmless and has been left visible.
+
+## 7. Open on a phone over LAN (testing only)
+
+Phone browsers allow the camera only over HTTPS, so `dev:lan` serves HTTPS with a local
+self-signed certificate. The backend stays on `127.0.0.1`; the phone only reaches the frontend,
+which proxies `/api`.
+
+1. Find the laptop's Wi-Fi IP: `ipconfig getifaddr en0` (macOS).
+2. Add it to `frontend/.env.local`: `LAN_DEV_ORIGINS=<ip>`.
+3. Create a certificate for that IP once, from `frontend/` (no keychain install needed). The
+   mkcert binary is downloaded by `next dev --experimental-https`, or install it with `brew install mkcert`:
+   ```sh
+   mkdir -p certificates
+   mkcert -key-file certificates/lan-key.pem -cert-file certificates/lan.pem <ip> localhost 127.0.0.1
+   ```
+4. Run the backend as usual, then `npm run dev:lan`.
+5. On the phone (same Wi-Fi), open `https://<ip>:3000`, accept the untrusted-certificate
+   warning, and allow the camera. **Switch camera** appears when the device has more than one.
+
+There is no login: anyone on the same network can open the page and delete people. Prefer a
+phone hotspot, and stop `dev:lan` when done. Regenerate the certificate if the IP changes.
+`frontend/certificates/` is git-ignored.

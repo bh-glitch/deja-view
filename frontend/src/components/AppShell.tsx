@@ -145,6 +145,14 @@ export function AppShell() {
     setLastResult(null);
   }, [camera, enrollment, resetIdentity]);
 
+  // A different camera shows a different scene: drop names and any enrollment in progress.
+  const switchCamera = useCallback(async () => {
+    if (enrollment.state.kind === "capturing" || enrollment.state.kind === "naming") enrollment.dismiss();
+    resetIdentity();
+    setLastResult(null);
+    await camera.switchFacing();
+  }, [camera, enrollment, resetIdentity]);
+
   const onDelete = useCallback(
     async (person: Person) => {
       if (!window.confirm(`Delete ${person.displayName} and all their saved data?`)) return;
@@ -203,6 +211,9 @@ export function AppShell() {
             status={status}
             overlays={overlays}
             paused={enrolling}
+            mirrored={camera.facing === "user"}
+            canSwitch={camera.canSwitch}
+            onSwitch={() => void switchCamera()}
           />
           <div className="flex flex-col gap-4">
             <EnrollmentCard
@@ -210,6 +221,7 @@ export function AppShell() {
               state={enrollment.state}
               onSave={(name, relationship) => void enrollment.save(name, relationship)}
               onDismiss={enrollment.dismiss}
+              mirrored={camera.facing === "user"}
             />
             {!naming &&
               (recognized.length > 0 ? (

@@ -15,10 +15,11 @@ export interface FaceOverlay {
   tone: "known" | "unknown";
 }
 
-// Boxes are in unmirrored frame pixels; the preview is mirrored, so flip x.
-function boxStyle({ box, frameWidth, frameHeight }: FaceOverlay) {
+// Boxes are in unmirrored frame pixels; a mirrored (front-camera) preview flips x.
+function boxStyle({ box, frameWidth, frameHeight }: FaceOverlay, mirrored: boolean) {
+  const left = mirrored ? frameWidth - box.x - box.width : box.x;
   return {
-    left: `${((frameWidth - box.x - box.width) / frameWidth) * 100}%`,
+    left: `${(left / frameWidth) * 100}%`,
     top: `${(box.y / frameHeight) * 100}%`,
     width: `${(box.width / frameWidth) * 100}%`,
     height: `${(box.height / frameHeight) * 100}%`,
@@ -43,6 +44,9 @@ export function CameraPanel({
   status,
   overlays,
   paused,
+  mirrored,
+  canSwitch,
+  onSwitch,
   children,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -52,6 +56,9 @@ export function CameraPanel({
   status: RecognitionStatus;
   overlays: FaceOverlay[];
   paused: boolean;
+  mirrored: boolean;
+  canSwitch: boolean;
+  onSwitch: () => void;
   children?: ReactNode;
 }) {
   const running = camera.kind === "live" || camera.kind === "starting";
@@ -62,6 +69,12 @@ export function CameraPanel({
         <h2 id="camera-heading" className="text-lg font-semibold">
           Camera
         </h2>
+        <div className="flex gap-2">
+        {camera.kind === "live" && canSwitch && (
+          <button type="button" onClick={onSwitch} className="rounded-md border border-zinc-400 px-3 py-1.5 text-sm font-medium">
+            Switch camera
+          </button>
+        )}
         <button
           type="button"
           onClick={running ? onStop : onStart}
@@ -73,18 +86,25 @@ export function CameraPanel({
         >
           {running ? "Stop camera" : "Start camera"}
         </button>
+        </div>
       </div>
       <div className="relative w-full overflow-hidden rounded-md bg-zinc-900">
         <div className="relative">
-          {/* Preview is mirrored for the user; captured frames are not. */}
-          <video ref={videoRef} muted playsInline className="block h-auto w-full" style={{ transform: "scaleX(-1)" }} />
+          {/* Front-camera preview is mirrored like a selfie; captured frames never are. */}
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            className="block h-auto w-full"
+            style={mirrored ? { transform: "scaleX(-1)" } : undefined}
+          />
           {camera.kind === "live" &&
             overlays.map((overlay) => (
               <div
                 key={overlay.key}
                 aria-hidden
                 className={`absolute rounded-md border-2 ${overlay.tone === "known" ? "border-emerald-400" : "border-amber-400"}`}
-                style={boxStyle(overlay)}
+                style={boxStyle(overlay, mirrored)}
               >
                 <span
                   className={`absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold ${
