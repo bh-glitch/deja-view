@@ -238,10 +238,12 @@ describe("ConversationPanel and IdentityCard", () => {
 
   it("offers Record conversation only for a recognized person", () => {
     const onRecord = vi.fn();
-    const { rerender } = render(<IdentityCard person={person} latestCue={null} onRecordConversation={onRecord} />);
+    const { rerender } = render(
+      <IdentityCard view={{ kind: "recognized", people: [person], otherFaces: 0 }} onRecordConversation={onRecord} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: /Record conversation/ }));
-    expect(onRecord).toHaveBeenCalled();
-    rerender(<IdentityCard person={null} latestCue={null} onRecordConversation={onRecord} />);
+    expect(onRecord).toHaveBeenCalledWith(person);
+    rerender(<IdentityCard view={{ kind: "unknown", faces: 1 }} onRecordConversation={onRecord} />);
     expect(screen.queryByRole("button", { name: /Record conversation/ })).toBeNull();
   });
 });

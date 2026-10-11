@@ -1,8 +1,15 @@
-/** Persistent fixture-mode warning (owner: Ishan). */
+/**
+ * Persistent fixture-mode marker (owner: Ishan; compact header badge in the Liquid Glass
+ * redesign by Arnav, human-requested). Smaller, but always visible while data is synthetic.
+ */
 export function FixtureModeBanner() {
   return (
-    <div role="status" className="w-full bg-amber-300 px-4 py-2 text-center font-semibold text-amber-950">
+    <span
+      role="status"
+      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-300/40 bg-amber-300/15 px-2.5 py-1 text-[11px] font-semibold text-amber-200"
+    >
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-amber-300" />
       Fixture mode — synthetic data
-    </div>
+    </span>
   );
 }
