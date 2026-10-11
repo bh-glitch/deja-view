@@ -6,42 +6,50 @@
  */
 import { useState } from "react";
 
-import { MAX_CUE_CHARS, MAX_SUMMARY_CHARS, type ConversationState } from "@/hooks/useConversationMemory";
+import { MAX_CUE_CHARS, type ConversationState } from "@/hooks/useConversationMemory";
 import type { MemoryDraft } from "@/lib/api-client";
-import type { AiProvider } from "@/lib/audio/ai-drafts";
 
-const DISCLOSURE =
-  "Conversation audio is sent to ElevenLabs for transcription. The reminder is drafted by the AI shown with each draft (local AI keeps the text on this laptop).";
+/** Full privacy details on hover/long-press; the panel keeps one short line. */
+const DISCLOSURE_DETAIL =
+  "Conversation audio is sent to ElevenLabs for transcription. The reminder is drafted by the configured AI (local AI keeps the text on this laptop; Gemini sends it to Google). The original transcript is saved with the memory.";
 
 function ReviewForm({
   draft,
-  provider,
-  transcript,
   saving,
   error,
   onSave,
   onDiscard,
 }: {
   draft: MemoryDraft;
-  provider: AiProvider;
-  transcript: string;
   saving: boolean;
   error: string | null;
   onSave: (edited: { summary: string; cue: string }) => void;
   onDiscard: () => void;
 }) {
+  // Compact review (human request 2026-10-10): the bullets that will be shown, plus one
+  // editable reminder. The summary and transcript are still saved, just not printed here.
   const [cue, setCue] = useState(draft.cue);
-  const [summary, setSummary] = useState(draft.summary);
+  const summary = draft.summary;
   return (
     <form
-      className="flex flex-col gap-2"
+      className="flex flex-col gap-2.5"
       onSubmit={(event) => {
         event.preventDefault();
         onSave({ summary, cue });
       }}
     >
+      {draft.facts.length > 0 && (
+        <ul aria-label="Highlights" className="flex flex-col gap-1.5 text-sm text-white/85">
+          {draft.facts.slice(0, 3).map((fact) => (
+            <li key={fact.evidenceQuote} className="flex gap-2">
+              <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-white/70" />
+              <span>{fact.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
       <label className="flex flex-col text-[13px] font-medium text-white/80">
-        Reminder for next time
+        Reminder
         <textarea
           required
           rows={2}
@@ -51,31 +59,6 @@ function ReviewForm({
           className="glass-input mt-1 resize-none text-[15px]"
         />
       </label>
-      <label className="flex flex-col text-[13px] font-medium text-white/80">
-        Summary
-        <textarea
-          required
-          rows={3}
-          maxLength={MAX_SUMMARY_CHARS}
-          value={summary}
-          onChange={(event) => setSummary(event.target.value)}
-          className="glass-input mt-1 resize-none text-[13px]"
-        />
-      </label>
-      {draft.facts.length > 0 && (
-        <ul className="flex flex-col gap-1 text-xs text-white/70">
-          {draft.facts.map((fact) => (
-            <li key={fact.evidenceQuote}>
-              • {fact.text} <span className="italic">(“{fact.evidenceQuote}”)</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="text-xs text-white/55">Drafted by {provider.label}. Edit anything before saving.</p>
-      <details className="text-xs text-white/55">
-        <summary>Transcript</summary>
-        <p className="mt-1 whitespace-pre-wrap">{transcript}</p>
-      </details>
       {error && (
         <p role="alert" className="text-sm text-red-300">
           {error}
@@ -84,7 +67,7 @@ function ReviewForm({
       <div className="flex gap-2">
         <button
           type="submit"
-          disabled={saving || !cue.trim() || !summary.trim()}
+          disabled={saving || !cue.trim()}
           className="glass-btn glass-btn--primary flex-1"
         >
           {saving ? "Saving…" : "Save memory"}
@@ -149,8 +132,6 @@ export function ConversationPanel({
       {state.kind === "review" && (
         <ReviewForm
           draft={state.draft}
-          provider={state.provider}
-          transcript={state.transcript}
           saving={state.saving}
           error={state.error}
           onSave={onSave}
@@ -174,7 +155,9 @@ export function ConversationPanel({
           </div>
         </>
       )}
-      <p className="text-[11px] leading-snug text-white/45">{DISCLOSURE}</p>
+      <p className="text-[11px] leading-snug text-white/45" title={DISCLOSURE_DETAIL}>
+        🔒 Voice is transcribed by ElevenLabs. Faces stay on this laptop.
+      </p>
     </section>
   );
 }

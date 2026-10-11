@@ -142,3 +142,45 @@ def test_route_returns_grounded_draft_and_saves_nothing(monkeypatch, client) -> 
     assert data.display_name == "Demo Alex"
     assert seen == ["Hi, I'm Demo Alex."]
     assert client.get("/api/people").json()["data"] == people_before["data"]
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("your roommate", "roommate"),
+        ("I'm your brother", "brother"),
+        ("Ishan's twin brother", "Ishan's twin brother"),
+        ("same hackathon team.", "same hackathon team"),
+        ("your", None),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_relationship_is_cleaned(raw, expected) -> None:
+    from app.ai.introduction import _clean_relationship
+
+    assert _clean_relationship(raw) == expected
+
+
+def test_relationship_to_someone_else_is_kept_when_grounded() -> None:
+    from app.ai.introduction import IntroductionOutput, ground_introduction
+
+    transcript = "Hey, my name's Arnav and I'm Ishan's twin brother."
+    draft = ground_introduction(
+        transcript,
+        IntroductionOutput(
+            intent="introduction",
+            displayName="Arnav",
+            nameEvidence="my name's Arnav",
+            relationship="Ishan's twin brother",
+            relationshipEvidence="I'm Ishan's twin brother",
+        ),
+    )
+    assert draft.relationship == "Ishan's twin brother"
+
+
+def test_prompt_counts_connections_to_other_people() -> None:
+    from app.ai.introduction import SYSTEM_INSTRUCTION
+
+    assert "OR to someone else" in SYSTEM_INSTRUCTION
+    assert "Never infer a" in SYSTEM_INSTRUCTION

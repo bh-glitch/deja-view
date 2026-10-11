@@ -214,9 +214,12 @@ describe("ConversationPanel and IdentityCard", () => {
         onDiscard={vi.fn()}
       />,
     );
-    expect(screen.getByText(/we did the Demo Ridge trail/, { selector: "span" })).toBeTruthy();
-    expect(screen.getByText(/Drafted by local AI/)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Reminder for next time"), { target: { value: "Ask about guitar." } });
+    // Shows the bullets to be saved, without raw transcript quotes or model names.
+    const highlights = screen.getByRole("list", { name: "Highlights" });
+    expect(highlights.textContent).toContain(draft.facts[0].text);
+    expect(document.body.textContent).not.toContain(draft.facts[0].evidenceQuote);
+    expect(document.body.textContent).not.toMatch(/qwen|Drafted by/);
+    fireEvent.change(screen.getByLabelText("Reminder"), { target: { value: "Ask about guitar." } });
     fireEvent.click(screen.getByRole("button", { name: "Save memory" }));
     expect(onSave).toHaveBeenCalledWith({ summary: draft.summary, cue: "Ask about guitar." });
   });

@@ -21,20 +21,22 @@ export interface EnrollmentVoiceProps {
   onRetryDraft?: () => void;
 }
 
-const VOICE_DISCLOSURE =
-  "Introduction audio is sent to ElevenLabs for transcription. The name is found by the AI shown with each draft (local AI keeps the text on this laptop). Face images are never sent.";
+/** Full privacy details, shown on hover/long-press; the card itself keeps one short line. */
+const VOICE_DISCLOSURE_DETAIL =
+  "Introduction audio is sent to ElevenLabs for transcription. The name is found by the configured AI (local AI keeps the text on this laptop; Gemini sends it to Google). Face images are never sent.";
 
+/** Compact voice status (human request 2026-10-10: no raw transcripts or model names on screen). */
 function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
   const { state } = voice;
   const busy = state.kind === "transcribing" || state.kind === "understanding";
+  const usesGemini = state.kind === "heard" && state.provider.kind === "gemini";
   return (
     <div className="glass-well flex flex-col gap-2 p-3 text-sm" aria-live="polite">
       {state.kind === "listening" && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-2 font-medium text-red-300">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex flex-1 items-center gap-2 font-medium text-red-300">
             <span aria-hidden className="breathe h-2.5 w-2.5 rounded-full bg-red-400 shadow-[0_0_10px_rgb(248_113_113)]" />
-            Listening for an introduction… {Math.min(Math.floor(state.elapsedMs / 1000), state.limitMs / 1000)}s /{" "}
-            {state.limitMs / 1000}s
+            Listening… {Math.min(Math.floor(state.elapsedMs / 1000), state.limitMs / 1000)}s
           </span>
           <button type="button" onClick={voice.onFinish} className="glass-btn glass-btn--sm glass-btn--primary">
             Done
@@ -44,60 +46,37 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
           </button>
         </div>
       )}
-      {state.kind === "transcribing" && <p className="text-white/80">Transcribing…</p>}
-      {state.kind === "understanding" && (
-        <p className="text-white/80">
-          Heard “{state.transcript}”. Finding the name…
-        </p>
-      )}
-      {state.kind === "heard" && (
-        <p className="text-emerald-200">
-          Heard “{state.draft.nameEvidence ?? state.transcript}”. Check the name below, then save.{" "}
-          <span className="text-xs text-white/50">Found by {state.provider.label}.</span>
-        </p>
-      )}
-      {state.kind === "no-name" && (
-        <p className="text-amber-200">
-          {state.transcript ? `Heard “${state.transcript}”. ` : ""}
-          {state.message}
-        </p>
-      )}
+      {busy && <p className="text-white/80">Getting the name…</p>}
+      {state.kind === "heard" && <p className="text-emerald-200">✓ Got it. Check the name and save.</p>}
+      {state.kind === "no-name" && <p className="text-amber-200">{state.message}</p>}
       {state.kind === "error" && (
         <p role="alert" className="text-red-300">
-          {state.transcript ? `Heard “${state.transcript}”. ` : ""}
           {state.message}
         </p>
       )}
       {(state.kind === "idle" || state.kind === "heard" || state.kind === "no-name" || state.kind === "error") && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {state.kind === "error" && state.transcript && voice.onRetryDraft && (
-            <button
-              type="button"
-              onClick={voice.onRetryDraft}
-              className="glass-btn glass-btn--sm glass-btn--primary"
-            >
+            <button type="button" onClick={voice.onRetryDraft} className="glass-btn glass-btn--sm glass-btn--primary">
               Try again
             </button>
           )}
-          <button
-            type="button"
-            onClick={voice.onListen}
-            disabled={busy}
-            className="glass-btn glass-btn--sm"
-          >
+          <button type="button" onClick={voice.onListen} disabled={busy} className="glass-btn glass-btn--sm">
             🎤 {state.kind === "idle" ? "Listen for name" : "Listen again"}
           </button>
+          <label className="ml-auto flex items-center gap-1.5 text-xs text-white/60">
+            <input
+              type="checkbox"
+              checked={voice.autoListen}
+              onChange={(event) => voice.onAutoListenChange(event.target.checked)}
+            />
+            Auto-listen
+          </label>
         </div>
       )}
-      <label className="flex items-center gap-2 text-xs text-white/65">
-        <input
-          type="checkbox"
-          checked={voice.autoListen}
-          onChange={(event) => voice.onAutoListenChange(event.target.checked)}
-        />
-        Auto-listen for introductions
-      </label>
-      <p className="text-[11px] leading-snug text-white/45">{VOICE_DISCLOSURE}</p>
+      <p className="text-[11px] leading-snug text-white/45" title={VOICE_DISCLOSURE_DETAIL}>
+        🔒 Voice is transcribed by ElevenLabs{usesGemini ? " and read by Gemini" : ""}. Faces stay on this laptop.
+      </p>
     </div>
   );
 }
