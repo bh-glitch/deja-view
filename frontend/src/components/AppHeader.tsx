@@ -104,18 +104,22 @@ export function AppHeader({
   const fixtureMode = health.kind === "ready" && health.health.mode === "fixture";
   const healthy =
     health.kind === "ready" && health.health.database.ready && health.health.vision.ready;
-  // Molded hardware shell (human-requested console-inspired styling): status LED, brand,
-  // a seam groove, then the recessed Diagnostics key.
+  // Molded white shell on a graphite core with touchpad-style light arcs at both ends
+  // (human-requested console-inspired styling): status LED, brand, seam groove, Diagnostics key.
   return (
-    <div data-overlay className="hw-shell flex items-center gap-2 rounded-full py-[5px] pl-3 pr-[5px] sm:gap-3 sm:pl-4">
-      <span aria-hidden className="hw-led shrink-0" data-tone={health.kind === "loading" || healthy ? undefined : "warn"} />
-      <div className="flex items-baseline gap-2">
-        <h1 className="whitespace-nowrap text-[17px] font-semibold tracking-tight">forget-not</h1>
-        <span className="hidden text-xs text-ink/50 sm:inline">Familiar-person reminder prototype</span>
+    <div data-overlay className="hw-core max-w-full rounded-full">
+      <div className="hw-shell flex items-center gap-2 rounded-full py-[5px] pl-5 pr-[18px] sm:gap-3 sm:pl-6">
+        <span aria-hidden className="pad-arc pad-arc--l" />
+        <span aria-hidden className="pad-arc pad-arc--r" />
+        <span aria-hidden className="hw-led shrink-0" data-tone={health.kind === "loading" || healthy ? undefined : "warn"} />
+        <div className="flex items-baseline gap-2">
+          <h1 className="whitespace-nowrap text-[17px] font-semibold tracking-tight">forget-not</h1>
+          <span className="hidden text-xs text-ink/50 sm:inline">Familiar-person reminder prototype</span>
+        </div>
+        {fixtureMode && <FixtureModeBanner />}
+        <span aria-hidden className="hw-groove hidden sm:block" />
+        <Diagnostics health={health} status={status} cameraLive={cameraLive} />
       </div>
-      {fixtureMode && <FixtureModeBanner />}
-      <span aria-hidden className="hw-groove hidden sm:block" />
-      <Diagnostics health={health} status={status} cameraLive={cameraLive} />
     </div>
   );
 }

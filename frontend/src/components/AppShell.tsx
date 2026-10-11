@@ -376,7 +376,7 @@ export function AppShell() {
         {/* Compact last-conversation summary: upper right, sliding aside while the panel is open. */}
         <div
           data-overlay
-          className={`absolute right-3 top-[68px] z-20 transition-transform duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-[84px] ${
+          className={`absolute right-3 top-[68px] z-20 transition-transform duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-[124px] ${
             conversationOpen ? "md:-translate-x-[396px]" : ""
           } ${summaryItems.length === 0 ? "pointer-events-none" : ""}`}
           aria-live="polite"
@@ -410,7 +410,7 @@ export function AppShell() {
             />
           </div>
         </div>
-        <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-[84px]">
+        <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-[124px]">
           <div className={`flex max-h-full ${conversationOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
             <ConversationDrawer
               open={conversationOpen}

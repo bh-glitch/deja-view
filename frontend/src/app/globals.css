@@ -521,6 +521,65 @@ body {
     opacity: 0.4;
     cursor: not-allowed;
   }
+  /* Graphite core the white shells sit on (two-tone console body). Wrap a .hw-shell. */
+  .hw-core {
+    position: relative;
+    padding: 3px 3px 5px;
+    background: linear-gradient(180deg, rgb(64 70 84), rgb(30 33 42) 60%, rgb(22 24 31));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      0 2px 4px rgb(10 15 30 / 0.25),
+      0 14px 30px -12px rgb(10 20 40 / 0.45);
+  }
+  .hw-core > .hw-shell {
+    box-shadow:
+      inset 0 1.5px 0 #ffffff,
+      inset 0 -3px 5px -1px rgb(130 148 182 / 0.28),
+      0 1px 0 rgb(0 0 0 / 0.35);
+  }
+  .hw-core > .hw-shell:hover {
+    box-shadow:
+      inset 0 1.5px 0 #ffffff,
+      inset 0 -3px 5px -1px rgb(130 148 182 / 0.28),
+      0 1px 0 rgb(0 0 0 / 0.35),
+      0 0 14px -2px rgb(var(--accent) / 0.35);
+  }
+
+  /* Touchpad-style light arcs at both ends of a shell: crescents, thick in the middle. */
+  .pad-arc {
+    position: absolute;
+    top: 16%;
+    bottom: 16%;
+    width: 10px;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: drop-shadow(0 0 3px rgb(var(--accent) / 0.7));
+    opacity: 0.85;
+    transition: opacity var(--dur-med) var(--ease-out);
+  }
+  .pad-arc--l {
+    left: 6px;
+    border-left: 2.5px solid rgb(var(--accent));
+  }
+  .pad-arc--r {
+    right: 6px;
+    border-right: 2.5px solid rgb(var(--accent));
+  }
+  .hw-shell:hover .pad-arc {
+    opacity: 1;
+  }
+
+  /* Face-button cluster keys: small white keys with fine grey glyphs. */
+  .hw-face {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    color: rgb(150 160 182);
+  }
+  .hw-face:hover:not(:disabled) {
+    color: rgb(var(--accent));
+  }
+
   /* Signature "jewel" key: a slightly larger key ringed by a fine breathing light. */
   .hw-jewel {
     width: 40px;
