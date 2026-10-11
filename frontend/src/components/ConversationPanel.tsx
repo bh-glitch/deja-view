@@ -11,7 +11,7 @@ import type { MemoryDraft } from "@/lib/api-client";
 
 /** Full privacy details on hover/long-press; the panel keeps one short line. */
 const DISCLOSURE_DETAIL =
-  "Conversation audio is sent to ElevenLabs for transcription. The reminder is drafted by the configured AI (local AI keeps the text on this laptop; Gemini sends it to Google). The original transcript is saved with the memory.";
+  "Conversation audio is sent to ElevenLabs for transcription. The reminder is drafted by the configured AI (local AI keeps the text on this laptop; Gemini sends it to Google; Claude sends it to Anthropic). The original transcript is saved with the memory.";
 
 function ReviewForm({
   draft,

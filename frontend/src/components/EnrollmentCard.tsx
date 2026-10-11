@@ -23,7 +23,7 @@ export interface EnrollmentVoiceProps {
 
 /** Full privacy details, shown on hover/long-press; the card itself keeps one short line. */
 const VOICE_DISCLOSURE_DETAIL =
-  "Introduction audio is sent to ElevenLabs for transcription. The name is found by the configured AI (local AI keeps the text on this laptop; Gemini sends it to Google). Face images are never sent.";
+  "Introduction audio is sent to ElevenLabs for transcription. The name is found by the configured AI (local AI keeps the text on this laptop; Gemini sends it to Google; Claude sends it to Anthropic). Face images are never sent.";
 
 /** What was heard, as a fallback the user can read and copy from when the AI misses something. */
 function YouSaid({ transcript }: { transcript: string | null | undefined }) {
@@ -39,7 +39,12 @@ function YouSaid({ transcript }: { transcript: string | null | undefined }) {
 function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
   const { state } = voice;
   const busy = state.kind === "transcribing" || state.kind === "understanding";
-  const usesGemini = state.kind === "heard" && state.provider.kind === "gemini";
+  const cloudAi =
+    state.kind === "heard" && state.provider.kind === "gemini"
+      ? "Gemini"
+      : state.kind === "heard" && state.provider.kind === "claude"
+        ? "Claude"
+        : null;
   return (
     <div className="glass-well flex flex-col gap-2 p-3 text-sm" aria-live="polite">
       {state.kind === "listening" && (
@@ -103,7 +108,7 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
         </div>
       )}
       <p className="text-[11px] leading-snug text-white/45" title={VOICE_DISCLOSURE_DETAIL}>
-        🔒 Voice is transcribed by ElevenLabs{usesGemini ? " and read by Gemini" : ""}. Faces stay on this laptop.
+        🔒 Voice is transcribed by ElevenLabs{cloudAi ? ` and read by ${cloudAi}` : ""}. Faces stay on this laptop.
       </p>
     </div>
   );

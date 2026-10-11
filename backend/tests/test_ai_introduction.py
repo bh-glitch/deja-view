@@ -236,3 +236,11 @@ def test_patterns_do_not_invent_relationships(transcript) -> None:
     from app.ai.introduction import relationship_from_patterns
 
     assert relationship_from_patterns(transcript, "Arnav") is None
+
+
+def test_possessive_description_is_never_a_name() -> None:
+    transcript = "Yo, Arnav. Ishan's twin."
+    draft = ground_introduction(
+        transcript, _intro(displayName="Ishan's twin", nameEvidence="Ishan's twin")
+    )
+    assert draft.display_name is None

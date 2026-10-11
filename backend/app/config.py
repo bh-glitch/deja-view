@@ -51,9 +51,12 @@ class Settings(BaseSettings):
     # AI drafts (human decision 2026-10-10): "ollama" runs a local model with no quota and
     # keeps transcripts on the laptop; "gemini" uses GEMINI_API_KEY. Default stays "gemini"
     # so tests and fresh clones never call a local server by accident.
-    ai_provider: Literal["gemini", "ollama"] = "gemini"
+    ai_provider: Literal["gemini", "ollama", "anthropic"] = "gemini"
     ollama_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "qwen3.5:4b-q4_K_M"
+    # "anthropic" (human decision 2026-10-10): Claude API, Haiku 5.5 by default.
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-haiku-5-5"
 
     @field_validator("database_path", "insightface_root", mode="after")
     @classmethod
@@ -61,7 +64,11 @@ class Settings(BaseSettings):
         return resolve_backend_path(value)
 
     @field_validator(
-        "gemini_api_key", "elevenlabs_api_key", "elevenlabs_voice_id", mode="after"
+        "gemini_api_key",
+        "elevenlabs_api_key",
+        "elevenlabs_voice_id",
+        "anthropic_api_key",
+        mode="after",
     )
     @classmethod
     def _strip_secret(cls, value: str) -> str:

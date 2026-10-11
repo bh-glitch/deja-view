@@ -51,3 +51,14 @@ describe("draftIntroductionWithProvider", () => {
     await expect(draftIntroductionWithProvider("Hi")).rejects.toMatchObject({ code: "PROVIDER_ERROR" });
   });
 });
+
+describe("parseAiProvider (Claude)", () => {
+  it("labels the Claude API", async () => {
+    const { parseAiProvider } = await import("@/lib/audio/ai-drafts");
+    expect(parseAiProvider("anthropic:claude-haiku-5-5")).toEqual({
+      kind: "claude",
+      model: "claude-haiku-5-5",
+      label: "Claude (claude-haiku-5-5)",
+    });
+  });
+});

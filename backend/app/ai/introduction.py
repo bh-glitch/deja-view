@@ -40,7 +40,7 @@ whenever they state it in words. Copy a short phrase (at most 6 words) from the 
 for example: "I'm your brother" -> "brother"; "your friend from college" -> "friend from
 college"; "I'm Ishan's twin brother" -> "Ishan's twin brother"; "I'm Bhavya's best friend"
 -> "Bhavya's best friend"; "we're on the same hackathon team" -> "same hackathon team";
-"I live next door" -> "live next door"; "I work with Bhavya" -> "works with Bhavya";
+"I live next door" -> "live next door"; "I work with Bhavya" -> "work with Bhavya";
 "I'm in your CS class" -> "in your CS class"; "Bhavya is my best friend" -> "Bhavya's best
 friend"; "Ishan is my brother" -> "Ishan's brother". Leave out "I'm", "I am" and "your".
 Never infer a relationship from names, tone or context, and never invent words that were
@@ -67,6 +67,9 @@ def _clean_name(value: str | None) -> str | None:
     if value is None:
         return None
     name = value.strip().strip(".,!?;:\"'").strip()
+    # "Ishan's twin" describes someone else; it is never the speaker's own name.
+    if re.search(r"(?:'s|’s)\b", name, flags=re.IGNORECASE):
+        return None
     return name if 0 < len(name) <= MAX_DISPLAY_NAME_CHARS else None
 
 

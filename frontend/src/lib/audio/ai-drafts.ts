@@ -10,7 +10,7 @@ import { ApiClientError, apiFetch, type IntroductionDraft, type MemoryDraft } fr
 export const AI_PROVIDER_HEADER = "X-AI-Provider";
 
 export interface AiProvider {
-  kind: "local" | "gemini" | "unknown";
+  kind: "local" | "gemini" | "claude" | "unknown";
   model: string | null;
   /** Short text for the UI, e.g. "local AI (qwen3.5:4b)". */
   label: string;
@@ -25,6 +25,7 @@ export function parseAiProvider(header: string | null): AiProvider {
     return { kind: "local", model, label: `local AI (${short}, on this laptop)` };
   }
   if (name === "gemini") return { kind: "gemini", model, label: `Gemini (${model ?? "Google"})` };
+  if (name === "anthropic") return { kind: "claude", model, label: `Claude (${model ?? "Anthropic"})` };
   return { kind: "unknown", model, label: header };
 }
 

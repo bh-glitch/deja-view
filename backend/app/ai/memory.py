@@ -65,6 +65,7 @@ Each evidenceQuote is a short span (at most {QUOTE_TARGET_CHARS} characters) cop
 character-for-character from the transcript that supports that bullet.
 
 Use only what the transcript says. Never invent names, relationships, feelings or details.
+Never guess anyone's gender: write the person's name instead of "he", "she", "his" or "her".
 hasMemorableContent: false when there is nothing worth remembering (silence, noise, only
 greetings, or unintelligible speech); then leave summary and cue empty and facts empty."""
 
