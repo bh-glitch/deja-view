@@ -12,8 +12,8 @@ Tested on macOS (Apple Silicon), 2026-10-10.
 ## 1. Clone and branch
 
 ```sh
-git clone https://github.com/bh-glitch/forget-not.git
-cd forget-not
+git clone https://github.com/bh-glitch/deja-view.git
+cd deja-view
 git switch -c <your-branch>   # bhavya/vision-integration, ishan/frontend, arnav/backend, vansh/speech-ai
 ```
 
