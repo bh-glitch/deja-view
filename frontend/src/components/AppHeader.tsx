@@ -6,7 +6,6 @@
 import { useRef, useState } from "react";
 
 import { FixtureModeBanner } from "@/components/FixtureModeBanner";
-import { GlassButton } from "@/components/glass/GlassButton";
 import { GlassSurface } from "@/components/glass/GlassSurface";
 import { ActivityIcon } from "@/components/glass/Icons";
 import { useDrawerDismiss } from "@/components/glass/useDrawer";
@@ -50,17 +49,20 @@ function Diagnostics({ health, status, cameraLive }: { health: HealthState; stat
 
   return (
     <div className="relative">
-      <GlassButton
+      <button
         ref={toggleRef}
-        size="sm"
-        variant="quiet"
-        label="Diagnostics"
-        tooltipSide="bottom"
-        icon={<ActivityIcon size={17} className={problem ? "text-amber-600" : undefined} />}
+        type="button"
+        className="hw-key"
+        aria-label="Diagnostics"
         aria-expanded={open}
         aria-controls="diagnostics-panel"
         onClick={() => setOpen((value) => !value)}
-      />
+      >
+        <ActivityIcon size={17} className={problem ? "text-amber-600" : undefined} />
+        <span aria-hidden className="glass-tip" data-side="bottom">
+          Diagnostics
+        </span>
+      </button>
       <GlassSurface
         ref={panelRef}
         id="diagnostics-panel"
@@ -100,18 +102,20 @@ export function AppHeader({
   cameraLive: boolean;
 }) {
   const fixtureMode = health.kind === "ready" && health.health.mode === "fixture";
+  const healthy =
+    health.kind === "ready" && health.health.database.ready && health.health.vision.ready;
+  // Molded hardware shell (human-requested console-inspired styling): status LED, brand,
+  // a seam groove, then the recessed Diagnostics key.
   return (
-    <GlassSurface
-      elevation="base"
-      data-overlay
-      className="flex items-center gap-3 rounded-full py-1.5 pl-4 pr-1.5"
-    >
+    <div data-overlay className="hw-shell flex items-center gap-2 rounded-full py-[5px] pl-3 pr-[5px] sm:gap-3 sm:pl-4">
+      <span aria-hidden className="hw-led shrink-0" data-tone={health.kind === "loading" || healthy ? undefined : "warn"} />
       <div className="flex items-baseline gap-2">
-        <h1 className="text-[17px] font-semibold tracking-tight">forget-not</h1>
-        <span className="hidden text-xs text-ink/55 sm:inline">Familiar-person reminder prototype</span>
+        <h1 className="whitespace-nowrap text-[17px] font-semibold tracking-tight">forget-not</h1>
+        <span className="hidden text-xs text-ink/50 sm:inline">Familiar-person reminder prototype</span>
       </div>
       {fixtureMode && <FixtureModeBanner />}
+      <span aria-hidden className="hw-groove hidden sm:block" />
       <Diagnostics health={health} status={status} cameraLive={cameraLive} />
-    </GlassSurface>
+    </div>
   );
 }

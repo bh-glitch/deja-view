@@ -5,7 +5,6 @@
  * the screen"). Replaces the large identity card. Shows nothing until someone is recognized.
  */
 import { memoryBullets } from "@/components/ConversationDrawer";
-import { GlassSurface } from "@/components/glass/GlassSurface";
 import { MicIcon } from "@/components/glass/Icons";
 import type { Person, PersonDetail } from "@/lib/api-client";
 import { timeAgo } from "@/lib/face-tag";
@@ -28,11 +27,11 @@ export function ConversationSummary({
 }) {
   if (items.length === 0) return null;
   return (
-    <GlassSurface
-      elevation="thin"
+    // Same molded hardware shell as the header, mirrored to the top-right corner.
+    <div
       role="status"
       aria-label="Last conversations"
-      className="animate-pop-in flex w-[min(260px,calc(100vw-32px))] flex-col gap-2.5 rounded-2xl p-2.5"
+      className="hw-shell animate-pop-in flex w-[min(270px,calc(100vw-32px))] flex-col gap-2.5 rounded-[22px] py-3 pl-3.5 pr-2.5"
     >
       {items.map(({ person, detail }) => {
         const latest = detail?.conversations[0];
@@ -54,7 +53,7 @@ export function ConversationSummary({
                 disabled={recordDisabled}
                 aria-label={`Record conversation with ${person.displayName}`}
                 title="Record conversation"
-                className="glass-btn glass-btn--sm glass-btn--icon glass-btn--quiet h-7 w-7"
+                className="hw-key hw-key--sm"
               >
                 <MicIcon size={14} />
               </button>
@@ -72,6 +71,6 @@ export function ConversationSummary({
           </section>
         );
       })}
-    </GlassSurface>
+    </div>
   );
 }
