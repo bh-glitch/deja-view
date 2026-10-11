@@ -37,7 +37,7 @@ def _out(**fields) -> MemoryOutput:
 
 def test_grounded_memory_is_kept() -> None:
     draft = ground_memory(TRANSCRIPT, _out())
-    assert draft.cue.startswith("Last time")
+    assert draft.cue.startswith("You talked about")
     assert [fact.text for fact in draft.facts] == ["Just back from Lisbon", "Likes jazz"]
     assert all(fact.evidence_quote in TRANSCRIPT for fact in draft.facts)
 
@@ -104,7 +104,7 @@ def test_route_returns_draft_and_saves_nothing(monkeypatch, client) -> None:
     response = client.post("/api/ai/memory", json={"transcript": TRANSCRIPT})
     assert response.status_code == 200, response.text
     data = MemoryDraftResponse.model_validate(response.json()).data
-    assert data.cue.startswith("Last time")
+    assert not data.cue.startswith("Last time")  # the UI adds "Last time" itself
     assert len(data.facts) == 2
     assert client.get("/api/people").json()["data"]["people"] == []
 
@@ -153,3 +153,19 @@ def test_prompt_asks_for_short_distinct_bullets() -> None:
     prompt = " ".join(memory.system_instruction("Maya").split())
     assert "each a DIFFERENT detail" in prompt
     assert f"at most {memory.FACT_TARGET_CHARS}" in prompt
+
+
+@pytest.mark.parametrize(
+    ("cue", "expected"),
+    [
+        (
+            "Last time you guys talked about the Rutgers game.",
+            "You guys talked about the Rutgers game.",
+        ),
+        ("last time, you and Maya talked about pottery", "You and Maya talked about pottery"),
+        ("You and Maya talked about pottery.", "You and Maya talked about pottery."),
+    ],
+)
+def test_cue_never_starts_with_last_time(cue, expected) -> None:
+    assert memory.strip_last_time(cue) == expected
+    assert 'Do not start with "Last time"' in memory.system_instruction("Maya")

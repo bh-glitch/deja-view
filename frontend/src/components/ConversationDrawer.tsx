@@ -12,13 +12,14 @@ import { GlassSurface } from "@/components/glass/GlassSurface";
 import { CloseIcon, MessageIcon, MicIcon } from "@/components/glass/Icons";
 import { useDrawerDismiss, useSwipeToClose } from "@/components/glass/useDrawer";
 import type { Conversation, Person, PersonDetail } from "@/lib/api-client";
+import { cleanCue } from "@/lib/cue";
 import { badgeGradient, initials, timeAgo } from "@/lib/face-tag";
 
 /** At most three short points: the saved facts, or the reminder when there are none
  * (human decision 2026-10-10: short bullets, no repeated summary/reminder text). */
 export function memoryBullets(memory: Conversation["memory"]): string[] {
   const facts = memory.facts.map((fact) => fact.text.trim()).filter(Boolean);
-  return (facts.length > 0 ? facts : [memory.cue]).slice(0, 3);
+  return (facts.length > 0 ? facts : [cleanCue(memory.cue)]).slice(0, 3);
 }
 
 function LatestConversation({ conversation }: { conversation: Conversation }) {
@@ -157,7 +158,7 @@ export function ConversationDrawer({
             <ul className="flex flex-col gap-2">
               {earlier.map((item) => (
                 <li key={item.id} className="glass-well px-3 py-2.5">
-                  <p className="text-sm leading-snug text-white/85">{item.memory.cue}</p>
+                  <p className="text-sm leading-snug text-white/85">{cleanCue(item.memory.cue)}</p>
                   <p className="mt-1 text-[11px] text-white/45">{timeAgo(item.endedAt)}</p>
                 </li>
               ))}

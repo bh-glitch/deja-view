@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiClientError, type PersonDetail } from "@/lib/api-client";
 import { isRecording, setSpeechPlaying } from "@/lib/audio/audio-lock";
 import { MAX_SPEECH_CHARS, speakText } from "@/lib/audio/speech-client";
+import { cleanCue } from "@/lib/cue";
 
 export type WhoIsThisState =
   | { kind: "idle" }
@@ -31,7 +32,7 @@ function shortenAtSentence(text: string, limit: number): string {
 
 /** The sentence spoken for a person; at most MAX_SPEECH_CHARS, name always intact. */
 export function composeWhoIsThis(name: string, relationship: string | null, cue: string | null): string {
-  const reminder = cue ? `Last time: ${cue}` : "You haven't saved a conversation with them yet.";
+  const reminder = cue ? `Last time: ${cleanCue(cue)}` : "You haven't saved a conversation with them yet.";
   // "your brother", but "Ishan's twin brother" / "same hackathon team" stand on their own.
   const own = relationship && /^(?:[A-Za-z]+(?:'s|’s)\s|same\s|my\s|our\s)/i.test(relationship);
   const described = relationship ? (own ? relationship : `your ${relationship}`) : null;

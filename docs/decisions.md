@@ -82,7 +82,7 @@ Replaces the "press Listen to enroll" trigger. Confirmation before saving is kep
 2. **Capture:** 3–5 enrollment samples via `/api/vision/enrollment-sample` from the live
    camera, all from the same single face. Abort and reset if the face is lost, a second face
    appears, or the box jumps (visitor change).
-3. **Listen:** one window of at most **12 s** (raised from 8 s on 2026-10-10: relationships were cut off). The mic indicator and "Listening for an
+3. **Listen:** one window of at most **7 s** (human decision 2026-10-10, after trying 8 s and 12 s). The mic indicator and "Listening for an
    introduction…" text are visible, with a **Cancel** button; the window stops early when
    the user presses Stop. It never opens during TTS playback.
 4. **Parse:** `transcribeAudio` → `draftIntroduction`. With `intent="introduction"` and a
