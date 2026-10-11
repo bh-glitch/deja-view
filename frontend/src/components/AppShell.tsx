@@ -355,8 +355,6 @@ export function AppShell() {
     <div className="fixed inset-0 p-3 sm:p-5 lg:p-7">
       <AmbientBackdrop videoRef={camera.videoRef} active={cameraLive} mirrored={camera.facing === "user"} />
       <GlassFilters />
-      {/* Smart-glasses corner tab, flush with the screen's top-right corner. */}
-      <CornerTab />
       <CameraViewport
         videoRef={camera.videoRef}
         camera={camera.state}
@@ -364,6 +362,9 @@ export function AppShell() {
         overlays={overlays}
         mirrored={camera.facing === "user"}
       >
+        {/* Smart-glasses corner tab, flush with the camera frame's top-right corner. */}
+        <CornerTab />
+
         {/* Header */}
         <div className="pointer-events-none absolute inset-x-3 top-3 z-30 flex justify-start sm:inset-x-4 sm:top-4">
           <div className="pointer-events-auto max-w-full">
@@ -374,7 +375,7 @@ export function AppShell() {
         {/* Compact last-conversation summary: upper right, sliding aside while the panel is open. */}
         <div
           data-overlay
-          className={`absolute right-3 top-[68px] z-20 transition-transform duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-4 ${
+          className={`absolute right-3 top-[68px] z-20 transition-transform duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-[76px] ${
             conversationOpen ? "md:-translate-x-[396px]" : ""
           } ${summaryItems.length === 0 ? "pointer-events-none" : ""}`}
           aria-live="polite"
@@ -408,7 +409,7 @@ export function AppShell() {
             />
           </div>
         </div>
-        <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-4">
+        <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-[76px]">
           <div className={`flex max-h-full ${conversationOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
             <ConversationDrawer
               open={conversationOpen}

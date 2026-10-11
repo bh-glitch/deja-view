@@ -569,53 +569,64 @@ body {
     opacity: 1;
   }
 
-  /* Smart-glasses corner tab: a right-angle triangle of quiet glass, flush with the
-     screen's top-right corner. clip-path shapes both the visuals and the click target. */
+  /* Smart-glasses corner tab: a right-angle triangle of quiet glass, flush with the camera
+     frame's top-right corner (the frame's rounded corner clips its tip). Phones need that
+     corner for the header. */
   .corner-tab-wrap {
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
-    z-index: 60;
+    z-index: 45;
     width: 64px;
     height: 64px;
+    display: none;
   }
+  @media (min-width: 640px) {
+    .corner-tab-wrap {
+      display: block;
+    }
+  }
+  /* A square turned 45° and centred on the frame corner: the frame clips everything outside
+     it, leaving a right-angle triangle whose blur and click area are clipped correctly
+     (Chromium does not clip backdrop-filter to clip-path). Its bottom edge is the diagonal. */
   .corner-tab {
+    --side: 90.5px; /* legs of the visible triangle = side / sqrt(2) = 64px */
     position: absolute;
-    inset: 0;
-    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    top: calc(var(--side) / -2);
+    right: calc(var(--side) / -2);
+    width: var(--side);
+    height: var(--side);
+    transform: rotate(45deg);
     background:
-      /* luminous hairline along the diagonal edge */
-      linear-gradient(45deg, transparent 49.2%, rgb(255 255 255 / 0.85) 50%, transparent 50.9%),
-      /* faint sheen toward the corner */
-      radial-gradient(circle at 100% 0%, rgb(255 255 255 / 0.45), transparent 70%),
+      radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.4), transparent 70%),
       rgb(240 246 255 / 0.22);
+    border-bottom: 1px solid rgb(255 255 255 / 0.85);
+    box-shadow: 0 1px 6px rgb(255 255 255 / 0.35);
     -webkit-backdrop-filter: blur(14px) saturate(1.6) brightness(1.1);
     backdrop-filter: blur(14px) saturate(1.6) brightness(1.1);
     transition:
       background-color var(--dur-med) var(--ease-out),
+      border-color var(--dur-med) var(--ease-out),
       transform var(--dur-med) var(--ease-spring);
-    transform-origin: 100% 0%;
     -webkit-tap-highlight-color: transparent;
   }
   .corner-tab:hover {
     background-color: rgb(240 246 255 / 0.38);
   }
   .corner-tab:active {
-    transform: scale(0.94);
+    transform: rotate(45deg) scale(0.94);
     transition-duration: 90ms;
   }
-  /* Outlines are clipped by clip-path, so focus brightens the edge in accent blue instead. */
+  /* The outline would draw the hidden square, so focus turns the diagonal edge blue. */
   .corner-tab:focus-visible {
     outline: none;
-    background-image:
-      linear-gradient(45deg, transparent 48.8%, rgb(var(--accent)) 50%, transparent 51.2%),
-      radial-gradient(circle at 100% 0%, rgb(255 255 255 / 0.5), transparent 70%);
+    border-bottom: 2px solid rgb(var(--accent));
   }
   /* A small soft light near the corner, so the tab reads as a control. */
   .corner-tab-dot {
     position: absolute;
-    top: 13px;
-    right: 13px;
+    top: 15px;
+    right: 15px;
     width: 7px;
     height: 7px;
     border-radius: 999px;
@@ -623,9 +634,10 @@ body {
     box-shadow:
       0 0 0 1px rgb(var(--ink) / 0.08),
       0 0 8px rgb(var(--accent) / 0.45);
+    pointer-events: none;
     transition: box-shadow var(--dur-med) var(--ease-out);
   }
-  .corner-tab:hover .corner-tab-dot {
+  .corner-tab:hover ~ .corner-tab-dot {
     box-shadow:
       0 0 0 1px rgb(var(--ink) / 0.08),
       0 0 12px 2px rgb(var(--accent) / 0.6);
@@ -652,8 +664,8 @@ body {
       opacity var(--dur-fast) var(--ease-out),
       translate var(--dur-med) var(--ease-spring);
   }
-  .corner-tab:hover + .corner-tab-tip,
-  .corner-tab:focus-visible + .corner-tab-tip {
+  .corner-tab:hover ~ .corner-tab-tip,
+  .corner-tab:focus-visible ~ .corner-tab-tip {
     opacity: 1;
     translate: 0 0;
     transition-delay: 250ms, 250ms;
