@@ -14,25 +14,24 @@ import { useDrawerDismiss, useSwipeToClose } from "@/components/glass/useDrawer"
 import type { Conversation, Person, PersonDetail } from "@/lib/api-client";
 import { badgeGradient, initials, timeAgo } from "@/lib/face-tag";
 
+/** At most three short points: the saved facts, or the reminder when there are none
+ * (human decision 2026-10-10: short bullets, no repeated summary/reminder text). */
+export function memoryBullets(memory: Conversation["memory"]): string[] {
+  const facts = memory.facts.map((fact) => fact.text.trim()).filter(Boolean);
+  return (facts.length > 0 ? facts : [memory.cue]).slice(0, 3);
+}
+
 function LatestConversation({ conversation }: { conversation: Conversation }) {
-  const { memory } = conversation;
   return (
     <article className="flex flex-col gap-3">
-      <div className="glass-well relative px-4 py-3.5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/55">Reminder</p>
-        <p className="mt-1 text-[17px] font-medium leading-snug text-white">“{memory.cue}”</p>
-      </div>
-      <p className="text-[15px] leading-relaxed text-white/85">{memory.summary}</p>
-      {memory.facts.length > 0 && (
-        <ul className="flex flex-col gap-1.5 text-[13px] leading-snug text-white/75">
-          {memory.facts.map((fact) => (
-            <li key={fact.evidenceQuote} className="flex gap-2">
-              <span aria-hidden className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-white/60" />
-              <span>{fact.text}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul aria-label="Last conversation highlights" className="glass-well flex flex-col gap-2.5 px-4 py-3.5">
+        {memoryBullets(conversation.memory).map((point, index) => (
+          <li key={index} className="flex gap-2.5 text-[15px] leading-snug text-white/90">
+            <span aria-hidden className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-white/70" />
+            <span>{point}</span>
+          </li>
+        ))}
+      </ul>
       <p className="text-xs text-white/50">
         {timeAgo(conversation.endedAt)} · {conversation.source === "speech" ? "recorded" : "typed"}
         {conversation.editedByUser ? " · edited" : ""}

@@ -74,7 +74,11 @@ export function useConversationMemory(onSaved: (personId: string) => void): Conv
   const draftFrom = useCallback(async (session: Session, transcript: string, controller: AbortController) => {
     setState({ kind: "drafting", person: session.person, transcript });
     try {
-      const { draft, provider } = await draftMemoryWithProvider(transcript, controller.signal);
+      const { draft, provider } = await draftMemoryWithProvider(
+        transcript,
+        session.person.displayName,
+        controller.signal,
+      );
       if (controller.signal.aborted) return;
       phaseRef.current = "idle";
       setState({ kind: "review", person: session.person, transcript, draft, provider, saving: false, error: null });

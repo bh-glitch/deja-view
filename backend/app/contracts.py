@@ -470,6 +470,14 @@ class TranscriptRequest(WireModel):
     transcript: Transcript
 
 
+class MemoryRequest(WireModel):
+    """Conversation transcript plus the confirmed name of the person it was with, so the
+    draft can say "Bhavya …" instead of "the speaker"."""
+
+    transcript: Transcript
+    person_name: DisplayName | None = None
+
+
 class SpeakRequest(WireModel):
     text: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_SPEECH_CHARS)
