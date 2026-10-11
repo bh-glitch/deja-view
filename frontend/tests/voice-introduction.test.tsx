@@ -223,7 +223,10 @@ describe("EnrollmentCard with voice", () => {
       />,
     );
     expect(screen.getByRole("heading").textContent).toBe("Save Demo Alex?");
-    expect(screen.getByText(/Found by local AI \(qwen3.5:4b, on this laptop\)/)).toBeTruthy();
+    expect(screen.getByText("✓ Got it. Check the name and save.")).toBeTruthy();
+    // No raw transcript or model name on screen (human request 2026-10-10).
+    expect(document.body.textContent).not.toContain("Hi, I'm Demo Alex, Sam's cousin.");
+    expect(document.body.textContent).not.toMatch(/qwen|local AI/);
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Demo Alex");
     expect((screen.getByLabelText("Relationship (optional)") as HTMLInputElement).value).toBe("Sam's cousin");
     expect(onSave).not.toHaveBeenCalled();
@@ -249,7 +252,7 @@ describe("EnrollmentCard with voice", () => {
   it("shows the listening indicator with Done/Cancel and blocks Save", () => {
     const voice = voiceProps({ kind: "listening", elapsedMs: 3200, limitMs: 8000 });
     render(<EnrollmentCard state={naming} onSave={vi.fn()} onDismiss={vi.fn()} voice={voice} />);
-    expect(screen.getByText(/Listening for an introduction… 3s \/ 8s/)).toBeTruthy();
+    expect(screen.getByText(/Listening… 3s/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(voice.onFinish).toHaveBeenCalled();
@@ -261,7 +264,10 @@ describe("EnrollmentCard with voice", () => {
     const voice = voiceProps({ kind: "no-name", transcript: "Hello there", message: "Didn't catch a name. Listen again or type it." });
     render(<EnrollmentCard state={naming} onSave={vi.fn()} onDismiss={vi.fn()} voice={voice} />);
     expect(screen.getByText(/Didn't catch a name/)).toBeTruthy();
-    expect(screen.getByText(/sent to ElevenLabs/).textContent).not.toMatch(/Gemini/);
+    const disclosure = screen.getByText(/transcribed by ElevenLabs/);
+    expect(disclosure.textContent).not.toMatch(/Gemini/);
+    expect(disclosure.textContent).toContain("Faces stay on this laptop");
+    expect(document.body.textContent).not.toContain("Hello there");
     fireEvent.click(screen.getByRole("button", { name: /Listen again/ }));
     expect(voice.onListen).toHaveBeenCalled();
   });
@@ -272,15 +278,28 @@ describe("EnrollmentCard with voice", () => {
       onRetryDraft: vi.fn(),
     };
     render(<EnrollmentCard state={naming} onSave={vi.fn()} onDismiss={vi.fn()} voice={voice} />);
-    expect(screen.getByRole("alert").textContent).toContain("Heard “Hi, I'm Demo Alex.”");
+    expect(screen.getByRole("alert").textContent).toBe("Google's AI service is temporarily overloaded.");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(voice.onRetryDraft).toHaveBeenCalled();
+  });
+
+  it("names Gemini in the disclosure only when Gemini found the name", () => {
+    const gemini = { kind: "gemini" as const, model: "gemini-3.8-flash", label: "Gemini (gemini-3.8-flash)" };
+    render(
+      <EnrollmentCard
+        state={naming}
+        onSave={vi.fn()}
+        onDismiss={vi.fn()}
+        voice={voiceProps({ kind: "heard", transcript: "I'm Demo Alex", draft: introduction, provider: gemini })}
+      />,
+    );
+    expect(screen.getByText(/transcribed by ElevenLabs and read by Gemini/)).toBeTruthy();
   });
 
   it("toggles auto-listen", () => {
     const voice = voiceProps({ kind: "idle" });
     render(<EnrollmentCard state={naming} onSave={vi.fn()} onDismiss={vi.fn()} voice={voice} />);
-    fireEvent.click(screen.getByLabelText("Auto-listen for introductions"));
+    fireEvent.click(screen.getByLabelText("Auto-listen"));
     expect(voice.onAutoListenChange).toHaveBeenCalledWith(false);
   });
 });

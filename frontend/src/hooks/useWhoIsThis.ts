@@ -32,7 +32,10 @@ function shortenAtSentence(text: string, limit: number): string {
 /** The sentence spoken for a person; at most MAX_SPEECH_CHARS, name always intact. */
 export function composeWhoIsThis(name: string, relationship: string | null, cue: string | null): string {
   const reminder = cue ? `Last time: ${cue}` : "You haven't saved a conversation with them yet.";
-  for (const intro of [relationship ? `This is ${name}, your ${relationship}.` : null, `This is ${name}.`]) {
+  // "your brother", but "Ishan's twin brother" / "same hackathon team" stand on their own.
+  const own = relationship && /^(?:[A-Za-z]+(?:'s|’s)\s|same\s|my\s|our\s)/i.test(relationship);
+  const described = relationship ? (own ? relationship : `your ${relationship}`) : null;
+  for (const intro of [described ? `This is ${name}, ${described}.` : null, `This is ${name}.`]) {
     if (!intro) continue;
     const room = MAX_SPEECH_CHARS - intro.length - 1;
     if (room >= 20) return `${intro} ${shortenAtSentence(reminder, room)}`;

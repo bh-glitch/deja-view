@@ -10,6 +10,12 @@ describe("composeWhoIsThis", () => {
     );
   });
 
+  it("does not add 'your' to a relationship that names someone else", () => {
+    expect(composeWhoIsThis("Arnav", "Ishan's twin brother", null)).toMatch(/^This is Arnav, Ishan's twin brother\./);
+    expect(composeWhoIsThis("Arnav", "same hackathon team", null)).toMatch(/^This is Arnav, same hackathon team\./);
+    expect(composeWhoIsThis("Arnav", "roommate", null)).toMatch(/^This is Arnav, your roommate\./);
+  });
+
   it("handles a person with no relationship or saved conversation", () => {
     expect(composeWhoIsThis("Sam", null, null)).toBe("This is Sam. You haven't saved a conversation with them yet.");
   });
