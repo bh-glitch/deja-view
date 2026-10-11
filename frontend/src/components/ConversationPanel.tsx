@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { MAX_CUE_CHARS, type ConversationState } from "@/hooks/useConversationMemory";
 import type { MemoryDraft } from "@/lib/api-client";
+import { cleanCue } from "@/lib/cue";
 
 /** Full privacy details on hover/long-press; the panel keeps one short line. */
 const DISCLOSURE_DETAIL =
@@ -97,7 +98,7 @@ export function ConversationPanel({
   if (state.kind === "saved") {
     return (
       <p role="status" className="glass-well p-3 text-sm text-emerald-200">
-        Saved. Next time you see {state.person.displayName}: “{state.cue}”
+        Saved. Next time you see {state.person.displayName}: “{cleanCue(state.cue)}”
       </p>
     );
   }

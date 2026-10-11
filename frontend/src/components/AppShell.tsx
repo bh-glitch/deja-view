@@ -24,7 +24,7 @@ import { EnrollmentCard } from "@/components/EnrollmentCard";
 import { GlassFilters } from "@/components/glass/GlassFilters";
 import { GlassToasts, type ToastItem } from "@/components/glass/GlassToast";
 import { useEdgeSwipeOpen } from "@/components/glass/useDrawer";
-import { IdentityCard, type IdentityView } from "@/components/IdentityCard";
+import { ConversationSummary, type SummaryItem } from "@/components/ConversationSummary";
 import { PeopleDrawer } from "@/components/PeopleDrawer";
 import { useAutoEnrollment } from "@/hooks/useAutoEnrollment";
 import { useCamera } from "@/hooks/useCamera";
@@ -32,6 +32,7 @@ import { useConversationMemory } from "@/hooks/useConversationMemory";
 import { useRecognitionLoop } from "@/hooks/useRecognitionLoop";
 import { useVoiceIntroduction } from "@/hooks/useVoiceIntroduction";
 import { useWhoIsThis } from "@/hooks/useWhoIsThis";
+import { cleanCue } from "@/lib/cue";
 import {
   ApiClientError,
   deletePerson,
@@ -50,8 +51,6 @@ import {
   type TrackerState,
 } from "@/lib/identity-tracker";
 
-/** At or above this width the conversation panel may open by itself for a new person. */
-const WIDE_QUERY = "(min-width: 900px)";
 /** Below this width only one drawer is open at a time. */
 const NARROW_QUERY = "(max-width: 767px)";
 
@@ -77,7 +76,6 @@ export function AppShell() {
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [conversationOpen, setConversationOpen] = useState(false);
   const [chosenId, setChosenId] = useState<string | null>(null);
-  const [autoOpenedFor, setAutoOpenedFor] = useState<string | null>(null);
   const peopleToggleRef = useRef<HTMLButtonElement>(null);
   const conversationToggleRef = useRef<HTMLButtonElement>(null);
 
@@ -242,13 +240,8 @@ export function AppShell() {
     lockedId ?? (chosenId && recognized.some((person) => person.id === chosenId) ? chosenId : (recognized[0]?.id ?? null));
   const focusedDetail = focusedId ? (details[focusedId] ?? null) : null;
 
-  // Open the panel by itself once per newly recognized person with history (wide screens).
-  // A person who returns does not reopen it; the user's close is respected until then.
-  const autoCandidate = focusedDetail && focusedDetail.conversations.length > 0 ? focusedDetail.person.id : null;
-  if (autoCandidate && autoCandidate !== autoOpenedFor) {
-    setAutoOpenedFor(autoCandidate);
-    if (matches(WIDE_QUERY) && !peopleOpen) setConversationOpen(true);
-  }
+  // The conversation panel opens only when the user asks (human request 2026-10-10: keep
+  // the camera on screen); the compact summary in the corner shows the last talk instead.
 
   const openConversation = useCallback((person?: Person) => {
     if (person) setChosenId(person.id);
@@ -309,16 +302,11 @@ export function AppShell() {
         })
       : [];
 
-  let identity: IdentityView;
-  if (!cameraLive || enrolling || naming) identity = { kind: "off" };
-  else if (!lastResult) identity = { kind: "looking" };
-  else if (lastResult.faces.length === 0) identity = { kind: "none" };
-  // Faces in the last frame but no tracks yet (just reset): wait for the next frame.
-  else if (tracker.tracks.length === 0) identity = { kind: "looking" };
-  else if (recognized.length > 0)
-    identity = { kind: "recognized", people: recognized, otherFaces: tracker.tracks.length - recognized.length };
-  else if (overlays.some((overlay) => overlay.kind === "pending")) identity = { kind: "pending", faces: tracker.tracks.length };
-  else identity = { kind: "unknown", faces: tracker.tracks.length };
+  // Names live on the face tags; the corner shows only the recognized people's last talk.
+  const summaryItems: SummaryItem[] =
+    cameraLive && !enrolling && !naming
+      ? recognized.map((person) => ({ person, detail: details[person.id] ?? null }))
+      : [];
 
   const recordDisabled = conversation.active || voice.state.kind === "listening";
   const flow =
@@ -355,7 +343,7 @@ export function AppShell() {
     toasts.push({
       id: "conversation-saved",
       tone: "success",
-      text: `Saved. Next time you see ${conversation.state.person.displayName}: “${conversation.state.cue}”`,
+      text: `Saved. Next time you see ${conversation.state.person.displayName}: “${cleanCue(conversation.state.cue)}”`,
     });
 
   const running = camera.state.kind === "live" || camera.state.kind === "starting";
@@ -378,21 +366,19 @@ export function AppShell() {
           </div>
         </div>
 
-        {/* Identity: upper right, sliding aside while the conversation panel is open. */}
+        {/* Compact last-conversation summary: upper right, sliding aside while the panel is open. */}
         <div
           data-overlay
           className={`absolute right-3 top-[68px] z-20 transition-transform duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-4 ${
             conversationOpen ? "md:-translate-x-[396px]" : ""
-          } ${identity.kind === "off" ? "pointer-events-none" : ""}`}
+          } ${summaryItems.length === 0 ? "pointer-events-none" : ""}`}
           aria-live="polite"
         >
-          <IdentityCard
-            view={identity}
-            onRecordConversation={startConversation}
+          <ConversationSummary
+            items={summaryItems}
+            onRecord={startConversation}
             recordDisabled={recordDisabled}
-            onOpenConversation={(person) => openConversation(person)}
-            focusedPersonId={focusedId}
-            conversationOpen={conversationOpen}
+            onOpen={(person) => openConversation(person)}
           />
         </div>
 

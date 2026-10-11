@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from pydantic import BaseModel
 
 from app.ai.grounding import find_literal
@@ -55,7 +57,8 @@ and it was transcribed. Write what will help the user pick up the conversation n
 {naming}
 
 cue: ONE short sentence (at most {CUE_TARGET_CHARS} characters) addressed to the user, for
-example "Last time you and Maya talked about her Colorado hiking trip." Prefer concrete
+example "You and Maya talked about Maya's Colorado hiking trip." Do not start with "Last time"
+(the app adds that itself). Prefer concrete
 topics, plans, news and shared interests.
 summary: ONE short sentence, at most {SUMMARY_TARGET_CHARS} characters.
 facts: at most {MAX_FACTS} bullet points, each a DIFFERENT detail, each at most
@@ -91,6 +94,15 @@ class MemoryOutput(BaseModel):
 NOTHING_TO_REMEMBER = "Nothing memorable was heard. Record again or type a note."
 
 
+_LAST_TIME = re.compile(r"^\s*last\s+time\b[\s,:;-]*", re.IGNORECASE)
+
+
+def strip_last_time(text: str) -> str:
+    """The UI and speech already say "Last time"; never let the cue repeat it."""
+    stripped = _LAST_TIME.sub("", text, count=1).strip()
+    return stripped[:1].upper() + stripped[1:] if stripped else text.strip()
+
+
 def _clip(text: str, limit: int) -> str:
     text = " ".join(text.split())
     if len(text) <= limit:
@@ -115,7 +127,7 @@ def ground_memory(transcript: str, output: MemoryOutput) -> MemoryDraft:
             break
 
     summary = _clip(output.summary, MAX_SUMMARY_CHARS)
-    cue = _clip(output.cue, MAX_CUE_CHARS)
+    cue = _clip(strip_last_time(output.cue), MAX_CUE_CHARS)
     # A cue with no quotable support in the transcript is not a grounded memory.
     if not facts or not summary or not cue:
         raise ApiError(ErrorCode.EMPTY_TRANSCRIPT, NOTHING_TO_REMEMBER)

@@ -83,7 +83,7 @@ async function flush() {
 }
 
 describe("useVoiceIntroduction", () => {
-  it("listens for the window, auto-stops, transcribes and drafts the introduction", async () => {
+  it("listens for the window (7 s), auto-stops, transcribes and drafts the introduction", async () => {
     mocks.transcribeAudio.mockResolvedValue("Hi, I'm Demo Alex, Sam's cousin.");
     mocks.draftIntroduction.mockResolvedValue(introduction);
     const { result } = renderHook(() => useVoiceIntroduction());
