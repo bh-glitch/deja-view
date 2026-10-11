@@ -1,7 +1,8 @@
 "use client";
 /**
  * Floating camera toolbar (Arnav, human-requested Liquid Glass redesign). Only controls the
- * app already supports; "Who is this?" stays a visibly disabled placeholder until speech lands.
+ * app already supports. "Who is this?" speaks the recognized person's name and latest cue
+ * (Bhavya 2026-10-10); it is disabled until someone is recognized.
  */
 import type { RefObject } from "react";
 
@@ -22,6 +23,7 @@ export function CameraToolbar({
   onToggleConversation,
   conversationAvailable,
   conversationRef,
+  whoIsThis,
 }: {
   running: boolean;
   onStop: () => void;
@@ -35,6 +37,7 @@ export function CameraToolbar({
   onToggleConversation: () => void;
   conversationAvailable: boolean;
   conversationRef: RefObject<HTMLButtonElement | null>;
+  whoIsThis: { available: boolean; busy: boolean; onClick: () => void };
 }) {
   return (
     <GlassSurface
@@ -76,9 +79,11 @@ export function CameraToolbar({
       )}
       <GlassButton
         variant="quiet"
-        label="Who is this? (coming soon)"
+        label={whoIsThis.busy ? "Stop speaking" : "Who is this?"}
         icon={<SpeakerIcon size={21} />}
-        disabled
+        active={whoIsThis.busy}
+        disabled={!whoIsThis.available && !whoIsThis.busy}
+        onClick={whoIsThis.onClick}
       />
       <GlassButton
         ref={conversationRef}
