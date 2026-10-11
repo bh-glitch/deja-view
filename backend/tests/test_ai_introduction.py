@@ -183,4 +183,56 @@ def test_prompt_counts_connections_to_other_people() -> None:
     from app.ai.introduction import SYSTEM_INSTRUCTION
 
     assert "OR to someone else" in SYSTEM_INSTRUCTION
-    assert "Never infer a" in SYSTEM_INSTRUCTION
+    assert "Never infer a relationship" in SYSTEM_INSTRUCTION
+
+
+TRANSCRIPT_REVERSED = "Hi, my name's Arnav. Bhavya is my best friend. Thank you"
+
+
+def _intro(**overrides) -> IntroductionOutput:
+    values = {
+        "intent": "introduction",
+        "displayName": "Arnav",
+        "nameEvidence": "my name's Arnav",
+        "relationship": None,
+        "relationshipEvidence": None,
+    }
+    return IntroductionOutput(**{**values, **overrides})
+
+
+def test_reversed_relationship_is_found_when_the_model_misses_it() -> None:
+    draft = ground_introduction(TRANSCRIPT_REVERSED, _intro())
+    assert draft.relationship == "Bhavya's best friend"
+    assert draft.relationship_evidence == "Bhavya is my best friend"
+
+
+def test_reworded_relationship_is_kept_when_every_word_was_said() -> None:
+    draft = ground_introduction(
+        TRANSCRIPT_REVERSED,
+        _intro(
+            relationship="Bhavya's best friend", relationshipEvidence="Bhavya is my best friend"
+        ),
+    )
+    assert draft.relationship == "Bhavya's best friend"
+
+
+def test_relationship_with_unsaid_words_is_still_dropped() -> None:
+    draft = ground_introduction(
+        "Hi, my name's Arnav. Nice to meet you.",
+        _intro(relationship="Bhavya's brother", relationshipEvidence="Nice to meet you"),
+    )
+    assert draft.relationship is None
+
+
+@pytest.mark.parametrize(
+    "transcript",
+    [
+        "Hi, my name's Arnav. This is my friend Sam.",
+        "My name is Arnav.",
+        "Hi, I'm Arnav. Arnav is my name.",
+    ],
+)
+def test_patterns_do_not_invent_relationships(transcript) -> None:
+    from app.ai.introduction import relationship_from_patterns
+
+    assert relationship_from_patterns(transcript, "Arnav") is None
