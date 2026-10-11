@@ -44,7 +44,7 @@ def test_validation_errors_use_envelope(client) -> None:
             503,
             "PROVIDER_NOT_CONFIGURED",
         ),
-        ("post", "/api/audio/speak", {"json": {"text": "hi"}}, 501, "NOT_IMPLEMENTED"),
+        ("post", "/api/audio/speak", {"json": {"text": "hi"}}, 503, "PROVIDER_NOT_CONFIGURED"),
         (
             "post",
             "/api/audio/transcribe",

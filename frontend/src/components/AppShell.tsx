@@ -10,6 +10,8 @@
  * Liquid Glass layout (Arnav, human-requested 2026-10-10): camera-first stage with floating
  * header, identity card, conversation and people drawers, toolbar and toasts. Recognition,
  * enrollment and API logic are unchanged; only presentation and drawer state are new.
+ * Who is this? (Bhavya 2026-10-10): speaks the focused recognized person's name, relationship
+ * and latest cue on request; stops when that person leaves the frame or the mic is needed.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -29,6 +31,7 @@ import { useCamera } from "@/hooks/useCamera";
 import { useConversationMemory } from "@/hooks/useConversationMemory";
 import { useRecognitionLoop } from "@/hooks/useRecognitionLoop";
 import { useVoiceIntroduction } from "@/hooks/useVoiceIntroduction";
+import { useWhoIsThis } from "@/hooks/useWhoIsThis";
 import {
   ApiClientError,
   deletePerson,
@@ -105,6 +108,9 @@ export function AppShell() {
   const enrolling = enrollment.state.kind === "capturing";
   const naming = enrollment.state.kind === "naming";
 
+  // Spoken reminder; never overlaps the microphone (shared audio lock).
+  const who = useWhoIsThis();
+
   // Auto-listen (default on): one bounded window per new face, never continuous.
   const voice = useVoiceIntroduction();
   const [autoListen, setAutoListen] = useState(true);
@@ -115,10 +121,11 @@ export function AppShell() {
   }, []);
 
   const startEnrollment = useCallback(async () => {
+    who.stop(); // the listening window must not hear our own speech
     voice.cancel(); // never carry a previous visitor's introduction into this session
     const ready = await enrollment.begin();
     if (ready && autoListenRef.current) await voice.listen();
-  }, [enrollment, voice]);
+  }, [enrollment, voice, who]);
 
   // A saved conversation refreshes that person's details so the new cue shows at once.
   const conversation = useConversationMemory((personId) => {
@@ -257,11 +264,19 @@ export function AppShell() {
 
   const startConversation = useCallback(
     (person: Person) => {
+      who.stop(); // recording must not pick up the spoken reminder
       openConversation(person);
       void conversation.start(person);
     },
-    [conversation, openConversation],
+    [conversation, openConversation, who],
   );
+
+  // Stop speaking about someone who is no longer recognized in the frame.
+  const speakingId = who.state.kind === "idle" ? null : who.state.personId;
+  const speakingStillHere = !speakingId || recognized.some((person) => person.id === speakingId);
+  useEffect(() => {
+    if (!speakingStillHere && who.busy) who.stop();
+  }, [speakingStillHere, who]);
 
   useEdgeSwipeOpen("right", () => openConversation());
   useEdgeSwipeOpen("left", () => {
@@ -332,6 +347,10 @@ export function AppShell() {
     toasts.push({ id: "enroll-notice", tone: "warning", text: enrollment.state.notice, ttlMs: 6000 });
   if (enrollment.state.kind === "saved")
     toasts.push({ id: "enroll-saved", tone: "success", text: `Saved ${enrollment.state.person.displayName}. Recognizing…` });
+  if (who.state.kind === "loading" || who.state.kind === "playing")
+    toasts.push({ id: "who-is-this", tone: "info", text: `🔊 ${who.state.text}` });
+  if (who.state.kind === "error")
+    toasts.push({ id: "who-is-this", tone: "warning", text: `${who.state.text} (Speech: ${who.state.message})`, ttlMs: 10000 });
   if (conversation.state.kind === "saved")
     toasts.push({
       id: "conversation-saved",
@@ -385,7 +404,8 @@ export function AppShell() {
 
         {/* Drawers */}
         <div className="pointer-events-none absolute bottom-[88px] left-3 top-[68px] z-30 flex items-start sm:left-4 sm:top-[76px]">
-          <div className="pointer-events-auto flex max-h-full">
+          {/* Only an open drawer takes clicks; a closed one must not block the camera UI under it. */}
+          <div className={`flex max-h-full ${peopleOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
             <PeopleDrawer
               open={peopleOpen}
               onClose={() => setPeopleOpen(false)}
@@ -398,7 +418,7 @@ export function AppShell() {
           </div>
         </div>
         <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-4">
-          <div className="pointer-events-auto flex max-h-full">
+          <div className={`flex max-h-full ${conversationOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
             <ConversationDrawer
               open={conversationOpen}
               onClose={() => setConversationOpen(false)}
@@ -458,6 +478,11 @@ export function AppShell() {
               onToggleConversation={() => (conversationOpen ? setConversationOpen(false) : openConversation())}
               conversationAvailable={conversationAvailable}
               conversationRef={conversationToggleRef}
+              whoIsThis={{
+                available: !!focusedDetail && !conversation.active && voice.state.kind !== "listening",
+                busy: who.busy,
+                onClick: () => (who.busy ? who.stop() : focusedDetail && void who.speak(focusedDetail)),
+              }}
             />
           </div>
         </div>

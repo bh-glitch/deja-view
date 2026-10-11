@@ -13,12 +13,14 @@ import logging
 import httpx
 
 from app.config import Settings
-from app.contracts import MAX_TRANSCRIPT_CHARS, ApiError, ErrorCode, not_implemented
+from app.contracts import MAX_TRANSCRIPT_CHARS, ApiError, ErrorCode
 
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://api.elevenlabs.io"
 STT_TIMEOUT = httpx.Timeout(60.0, connect=10.0)
+TTS_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
+TTS_OUTPUT_FORMAT = "mp3_44100_128"
 
 # Tests replace this with httpx.MockTransport; None means the real network.
 _transport: httpx.AsyncBaseTransport | None = None
@@ -119,5 +121,36 @@ async def transcribe_audio(
 
 
 async def synthesize_speech(settings: Settings, text: str) -> bytes:
-    """Return verified MP3 bytes for ``text`` using the configured voice/model."""
-    raise not_implemented("Speech synthesis")
+    """Return verified MP3 bytes for ``text`` using the configured voice/model.
+
+    Same request Vansh validated in docs/provider-validation.md (E4): explicit voice ID,
+    ``eleven_flash_v2_5``, ``mp3_44100_128``. Bytes are checked to be MP3 before returning.
+    """
+    if not settings.elevenlabs_api_key:
+        raise ApiError(ErrorCode.PROVIDER_NOT_CONFIGURED, "ElevenLabs API key is not configured.")
+    if not settings.elevenlabs_voice_id:
+        raise ApiError(ErrorCode.PROVIDER_NOT_CONFIGURED, "ElevenLabs voice ID is not configured.")
+    if not text.strip():
+        raise ApiError(ErrorCode.BAD_REQUEST, "Nothing to say.")
+
+    try:
+        async with _client(settings, TTS_TIMEOUT) as client:
+            response = await client.post(
+                f"/v1/text-to-speech/{settings.elevenlabs_voice_id}",
+                params={"output_format": TTS_OUTPUT_FORMAT},
+                json={"text": text, "model_id": settings.elevenlabs_tts_model},
+                headers={"Accept": "audio/mpeg"},
+            )
+    except httpx.TimeoutException as exc:
+        raise ApiError(
+            ErrorCode.PROVIDER_TIMEOUT, "Speech generation timed out; try again."
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise ApiError(ErrorCode.PROVIDER_ERROR, "Could not reach the speech service.") from exc
+
+    if response.status_code != 200:
+        raise _provider_error(response, "speech")
+    audio = response.content
+    if not audio or sniff_audio_format(audio) != "mp3":
+        raise ApiError(ErrorCode.PROVIDER_ERROR, "Speech service did not return MP3 audio.")
+    return audio
