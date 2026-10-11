@@ -110,7 +110,12 @@ describe("ConversationDrawer", () => {
     const onClose = vi.fn();
     render(drawer(true, onClose));
     expect(screen.getByRole("dialog", { name: detail.person.displayName })).toBeTruthy();
-    expect(screen.getByText(`“${detail.latestCue}”`)).toBeTruthy();
+    // Short bullets only: the saved facts, no repeated reminder/summary paragraphs.
+    const latest = detail.conversations[0].memory;
+    const highlights = screen.getByRole("list", { name: "Last conversation highlights" });
+    expect(highlights.querySelectorAll("li")).toHaveLength(Math.min(3, latest.facts.length || 1));
+    expect(highlights.textContent).toContain(latest.facts[0].text);
+    expect(screen.queryByText(latest.summary)).toBeNull();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
   });

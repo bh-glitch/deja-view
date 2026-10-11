@@ -149,6 +149,7 @@ export function draftIntroduction(transcript: string, signal?: AbortSignal): Pro
   return apiJson<IntroductionDraft>("/ai/introduction", jsonInit("POST", { transcript }, signal));
 }
 
-export function draftMemory(transcript: string, signal?: AbortSignal): Promise<MemoryDraft> {
-  return apiJson<MemoryDraft>("/ai/memory", jsonInit("POST", { transcript }, signal));
+export function draftMemory(transcript: string, personName?: string | null, signal?: AbortSignal): Promise<MemoryDraft> {
+  const payload = personName ? { transcript, personName } : { transcript };
+  return apiJson<MemoryDraft>("/ai/memory", jsonInit("POST", payload, signal));
 }

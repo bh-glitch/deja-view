@@ -581,6 +581,17 @@ export interface components {
             /** Text */
             text: string;
         };
+        /**
+         * MemoryRequest
+         * @description Conversation transcript plus the confirmed name of the person it was with, so the
+         *     draft can say "Bhavya …" instead of "the speaker".
+         */
+        MemoryRequest: {
+            /** Personname */
+            personName?: string | null;
+            /** Transcript */
+            transcript: string;
+        };
         /** PeopleList */
         PeopleList: {
             /** People */
@@ -731,7 +742,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TranscriptRequest"];
+                "application/json": components["schemas"]["MemoryRequest"];
             };
         };
         responses: {

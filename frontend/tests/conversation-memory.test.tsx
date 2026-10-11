@@ -24,8 +24,8 @@ vi.mock("@/lib/api-client", async (importOriginal) => ({
 }));
 vi.mock("@/lib/audio/ai-drafts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/audio/ai-drafts")>()),
-  draftMemoryWithProvider: async (transcript: string, signal?: AbortSignal) => ({
-    draft: await mocks.draftMemory(transcript, signal),
+  draftMemoryWithProvider: async (transcript: string, personName: string | null, signal?: AbortSignal) => ({
+    draft: await mocks.draftMemory(transcript, personName, signal),
     provider: LOCAL,
   }),
 }));
@@ -109,7 +109,8 @@ describe("useConversationMemory", () => {
     await recordAndStop(result);
 
     expect(mocks.transcribeAudio).toHaveBeenCalledTimes(1);
-    expect(mocks.draftMemory).toHaveBeenCalledWith(TRANSCRIPT, expect.any(AbortSignal));
+    // The draft is told who the conversation was with, so it can use their name.
+    expect(mocks.draftMemory).toHaveBeenCalledWith(TRANSCRIPT, expect.any(String), expect.any(AbortSignal));
     expect(result.current.state).toMatchObject({ kind: "review", person: { id: person.id } });
     expect(mocks.createConversation).not.toHaveBeenCalled();
 
@@ -245,5 +246,14 @@ describe("ConversationPanel and IdentityCard", () => {
     expect(onRecord).toHaveBeenCalledWith(person);
     rerender(<IdentityCard view={{ kind: "unknown", faces: 1 }} onRecordConversation={onRecord} />);
     expect(screen.queryByRole("button", { name: /Record conversation/ })).toBeNull();
+  });
+});
+
+describe("memoryBullets", () => {
+  it("shows at most three facts, or the reminder when there are none", async () => {
+    const { memoryBullets } = await import("@/components/ConversationDrawer");
+    const fact = (text: string) => ({ text, evidenceQuote: text });
+    expect(memoryBullets({ summary: "s", cue: "c", facts: [fact("a"), fact("b"), fact("c"), fact("d")] })).toEqual(["a", "b", "c"]);
+    expect(memoryBullets({ summary: "s", cue: "Ask Maya about pottery.", facts: [] })).toEqual(["Ask Maya about pottery."]);
   });
 });

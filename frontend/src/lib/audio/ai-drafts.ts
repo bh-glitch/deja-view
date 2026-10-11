@@ -28,11 +28,15 @@ export function parseAiProvider(header: string | null): AiProvider {
   return { kind: "unknown", model, label: header };
 }
 
-async function draft<T>(path: string, transcript: string, signal?: AbortSignal): Promise<{ draft: T; provider: AiProvider }> {
+async function draft<T>(
+  path: string,
+  payload: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<{ draft: T; provider: AiProvider }> {
   const response = await apiFetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transcript }),
+    body: JSON.stringify(payload),
     signal,
   });
   let body: unknown;
@@ -48,9 +52,10 @@ async function draft<T>(path: string, transcript: string, signal?: AbortSignal):
 }
 
 export function draftIntroductionWithProvider(transcript: string, signal?: AbortSignal) {
-  return draft<IntroductionDraft>("/ai/introduction", transcript, signal);
+  return draft<IntroductionDraft>("/ai/introduction", { transcript }, signal);
 }
 
-export function draftMemoryWithProvider(transcript: string, signal?: AbortSignal) {
-  return draft<MemoryDraft>("/ai/memory", transcript, signal);
+/** `personName` lets the draft say "Bhavya …" instead of "the speaker". */
+export function draftMemoryWithProvider(transcript: string, personName: string | null, signal?: AbortSignal) {
+  return draft<MemoryDraft>("/ai/memory", personName ? { transcript, personName } : { transcript }, signal);
 }

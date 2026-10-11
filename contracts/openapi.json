@@ -996,6 +996,36 @@
         "title": "MemoryFact",
         "type": "object"
       },
+      "MemoryRequest": {
+        "additionalProperties": false,
+        "description": "Conversation transcript plus the confirmed name of the person it was with, so the\ndraft can say \"Bhavya \u2026\" instead of \"the speaker\".",
+        "properties": {
+          "personName": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personname"
+          },
+          "transcript": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Transcript",
+            "type": "string"
+          }
+        },
+        "required": [
+          "transcript"
+        ],
+        "title": "MemoryRequest",
+        "type": "object"
+      },
       "PeopleList": {
         "additionalProperties": false,
         "properties": {
@@ -1310,7 +1340,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TranscriptRequest"
+                "$ref": "#/components/schemas/MemoryRequest"
               }
             }
           },
