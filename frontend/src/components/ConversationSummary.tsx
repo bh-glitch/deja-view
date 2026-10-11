@@ -42,7 +42,7 @@ export function ConversationSummary({
               <button
                 type="button"
                 onClick={() => onOpen(person)}
-                className="min-w-0 flex-1 truncate text-left text-[11px] font-medium uppercase tracking-[0.06em] text-white/55 hover:text-white/80"
+                className="min-w-0 flex-1 truncate text-left text-[11px] font-medium uppercase tracking-[0.06em] text-ink/55 hover:text-ink/80"
                 title="Open the full conversation"
               >
                 {items.length > 1 ? `${person.displayName} · ` : ""}
@@ -60,10 +60,10 @@ export function ConversationSummary({
               </button>
             </div>
             {latest && (
-              <ul className="flex flex-col gap-1 text-[12px] leading-snug text-white/80">
+              <ul className="flex flex-col gap-1 text-[12px] leading-snug text-ink/80">
                 {memoryBullets(latest.memory).map((point, index) => (
                   <li key={index} className="flex gap-1.5">
-                    <span aria-hidden className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-white/55" />
+                    <span aria-hidden className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent/55" />
                     <span>{point}</span>
                   </li>
                 ))}

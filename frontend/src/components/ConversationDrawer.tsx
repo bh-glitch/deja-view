@@ -27,13 +27,13 @@ function LatestConversation({ conversation }: { conversation: Conversation }) {
     <article className="flex flex-col gap-3">
       <ul aria-label="Last conversation highlights" className="glass-well flex flex-col gap-2.5 px-4 py-3.5">
         {memoryBullets(conversation.memory).map((point, index) => (
-          <li key={index} className="flex gap-2.5 text-[15px] leading-snug text-white/90">
-            <span aria-hidden className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-white/70" />
+          <li key={index} className="flex gap-2.5 text-[15px] leading-snug text-ink/90">
+            <span aria-hidden className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent/60" />
             <span>{point}</span>
           </li>
         ))}
       </ul>
-      <p className="text-xs text-white/50">
+      <p className="text-xs text-ink/50">
         {timeAgo(conversation.endedAt)} · {conversation.source === "speech" ? "recorded" : "typed"}
         {conversation.editedByUser ? " · edited" : ""}
       </p>
@@ -100,12 +100,12 @@ export function ConversationDrawer({
             {initials(person.displayName)}
           </span>
         ) : (
-          <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
+          <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/75 shadow-sm">
             <MessageIcon size={19} />
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/55">Last conversation</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink/55">Last conversation</p>
           <h2 id="conversation-drawer-title" className="truncate text-lg font-semibold leading-tight tracking-tight">
             {person ? person.displayName : "No one selected"}
           </h2>
@@ -134,7 +134,7 @@ export function ConversationDrawer({
       <div className="scroll-soft flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
         {flow}
         {!person && !flow && (
-          <p className="py-6 text-center text-sm leading-relaxed text-white/65">
+          <p className="py-6 text-center text-sm leading-relaxed text-ink/65">
             When someone you know is recognized, your last conversation with them appears here.
           </p>
         )}
@@ -148,18 +148,18 @@ export function ConversationDrawer({
         {person && !latest && !loading && (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <p className="text-[15px] font-medium">No saved conversation yet</p>
-            <p className="text-sm text-white/60">Record one so you have a reminder next time.</p>
+            <p className="text-sm text-ink/60">Record one so you have a reminder next time.</p>
           </div>
         )}
         {latest && <LatestConversation conversation={latest} />}
         {earlier.length > 0 && (
-          <section aria-label="Earlier conversations" className="flex flex-col gap-2 border-t border-white/10 pt-3">
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/55">Earlier</h3>
+          <section aria-label="Earlier conversations" className="flex flex-col gap-2 border-t border-ink/10 pt-3">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink/55">Earlier</h3>
             <ul className="flex flex-col gap-2">
               {earlier.map((item) => (
                 <li key={item.id} className="glass-well px-3 py-2.5">
-                  <p className="text-sm leading-snug text-white/85">{cleanCue(item.memory.cue)}</p>
-                  <p className="mt-1 text-[11px] text-white/45">{timeAgo(item.endedAt)}</p>
+                  <p className="text-sm leading-snug text-ink/85">{cleanCue(item.memory.cue)}</p>
+                  <p className="mt-1 text-[11px] text-ink/45">{timeAgo(item.endedAt)}</p>
                 </li>
               ))}
             </ul>
@@ -168,7 +168,7 @@ export function ConversationDrawer({
       </div>
 
       {person && onRecord && !flow && (
-        <footer className="border-t border-white/10 p-3">
+        <footer className="border-t border-ink/10 p-3">
           <GlassButton
             className="w-full"
             icon={<MicIcon size={17} />}

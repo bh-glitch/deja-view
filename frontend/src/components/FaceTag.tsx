@@ -109,7 +109,7 @@ export function FaceTag({ overlay, rect, compact }: { overlay: FaceOverlay; rect
                 {name}
               </span>
               {overlay.relationship && (
-                <span className={`block truncate leading-tight text-white/75 ${compact ? "text-[10px]" : "text-xs"}`}>
+                <span className={`block truncate leading-tight text-ink/75 ${compact ? "text-[10px]" : "text-xs"}`}>
                   {overlay.relationship}
                 </span>
               )}

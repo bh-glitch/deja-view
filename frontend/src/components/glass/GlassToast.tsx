@@ -78,7 +78,7 @@ export function GlassToasts({ toasts }: { toasts: ToastItem[] }) {
               type="button"
               onClick={() => setDismissed((current) => new Set(current).add(keyOf(toast)))}
               aria-label="Dismiss notification"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink/45 transition-colors hover:bg-white/80 hover:text-ink"
             >
               <CloseIcon size={14} />
             </button>

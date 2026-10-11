@@ -41,7 +41,7 @@ export const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(functi
         const rect = target.getBoundingClientRect();
         target.style.setProperty("--gx", `${clientX - rect.left}px`);
         target.style.setProperty("--gy", `${clientY - rect.top}px`);
-        target.style.setProperty("--glow", "0.16");
+        target.style.setProperty("--glow", "0.75");
       });
     },
     [lit, onPointerMove],

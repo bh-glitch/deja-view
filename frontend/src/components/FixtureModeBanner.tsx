@@ -6,9 +6,9 @@ export function FixtureModeBanner() {
   return (
     <span
       role="status"
-      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-300/40 bg-amber-300/15 px-2.5 py-1 text-[11px] font-semibold text-amber-200"
+      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-400/50 bg-amber-100/70 px-2.5 py-1 text-[11px] font-semibold text-amber-800"
     >
-      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-amber-500" />
       Fixture mode — synthetic data
     </span>
   );

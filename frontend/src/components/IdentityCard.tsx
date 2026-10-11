@@ -29,7 +29,7 @@ function Pill({ tone, text }: { tone: "idle" | "busy"; text: string }) {
     >
       <span
         aria-hidden
-        className={`h-2 w-2 rounded-full ${tone === "busy" ? "breathe bg-sky-300" : "bg-white/50"}`}
+        className={`h-2 w-2 rounded-full ${tone === "busy" ? "breathe bg-sky-500" : "bg-ink/30"}`}
       />
       {text}
     </GlassSurface>
@@ -63,7 +63,7 @@ function PersonRow({
         <p className={`truncate font-semibold leading-tight tracking-tight ${primary ? "text-[22px]" : "text-base"}`}>
           {person.displayName}
         </p>
-        <p className={`line-clamp-2 leading-snug text-white/72 ${primary ? "text-[15px]" : "text-[13px]"}`}>
+        <p className={`line-clamp-2 leading-snug text-ink/72 ${primary ? "text-[15px]" : "text-[13px]"}`}>
           {person.relationship ?? "Relationship not set"}
         </p>
       </div>
@@ -143,14 +143,14 @@ export function IdentityCard({
           role="status"
           className="animate-pop-in flex max-w-[300px] items-center gap-3 rounded-[var(--radius-card)] p-3 pr-5"
         >
-          <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/85">
+          <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/75 shadow-sm text-ink/85">
             <ScanFaceIcon size={24} />
           </span>
           <div className="min-w-0">
             <p className="text-[19px] font-semibold leading-tight tracking-tight">
               {view.faces > 1 ? `${view.faces} unknown people` : "Unknown person"}
             </p>
-            <p className="text-[13px] leading-snug text-white/70">
+            <p className="text-[13px] leading-snug text-ink/70">
               {view.faces > 1 ? "To add someone, have them face the camera alone." : "Not saved yet."}
             </p>
           </div>
@@ -167,8 +167,8 @@ export function IdentityCard({
           aria-label={`Recognized ${view.people.map((person) => person.displayName).join(", ")}`}
           className="flex w-[min(340px,calc(100vw-32px))] flex-col gap-3 rounded-[var(--radius-card)] p-3.5"
         >
-          <div className="flex items-center gap-1.5 px-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-200/90">
-            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_8px_rgb(110_231_183)]" />
+          <div className="flex items-center gap-1.5 px-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgb(16_185_129/0.6)]" />
             Recognized
           </div>
           {/* Re-keyed per person so a new identity animates in; the same one never restarts. */}
@@ -183,7 +183,7 @@ export function IdentityCard({
             />
           </div>
           {rest.length > 0 && (
-            <div className="flex flex-col gap-2.5 border-t border-white/10 pt-3">
+            <div className="flex flex-col gap-2.5 border-t border-ink/10 pt-3">
               {rest.map((person) => (
                 <div key={person.id} className="animate-pop-in">
                   <PersonRow
@@ -199,7 +199,7 @@ export function IdentityCard({
             </div>
           )}
           {view.otherFaces > 0 && (
-            <p className="px-0.5 text-xs text-white/60">
+            <p className="px-0.5 text-xs text-ink/60">
               +{view.otherFaces} {view.otherFaces === 1 ? "other face" : "other faces"} not recognized
             </p>
           )}

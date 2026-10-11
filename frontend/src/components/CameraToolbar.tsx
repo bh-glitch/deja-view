@@ -62,7 +62,7 @@ export function CameraToolbar({
         {peopleCount > 0 && (
           <span
             aria-hidden
-            className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-black"
+            className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white shadow"
           >
             {peopleCount}
           </span>

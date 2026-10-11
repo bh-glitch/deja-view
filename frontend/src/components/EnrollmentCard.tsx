@@ -29,8 +29,8 @@ const VOICE_DISCLOSURE_DETAIL =
 function YouSaid({ transcript }: { transcript: string | null | undefined }) {
   if (!transcript) return null;
   return (
-    <p className="select-text text-[13px] leading-snug text-white/70">
-      You said: <span className="text-white/90">“{transcript}”</span>
+    <p className="select-text text-[13px] leading-snug text-ink/70">
+      You said: <span className="text-ink/90">“{transcript}”</span>
     </p>
   );
 }
@@ -49,8 +49,8 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
     <div className="glass-well flex flex-col gap-2 p-3 text-sm" aria-live="polite">
       {state.kind === "listening" && (
         <div className="flex items-center gap-2">
-          <span className="inline-flex flex-1 items-center gap-2 font-medium text-red-300">
-            <span aria-hidden className="breathe h-2.5 w-2.5 rounded-full bg-red-400 shadow-[0_0_10px_rgb(248_113_113)]" />
+          <span className="inline-flex flex-1 items-center gap-2 font-medium text-red-600">
+            <span aria-hidden className="breathe h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgb(239_68_68/0.6)]" />
             Listening… {Math.min(Math.floor(state.elapsedMs / 1000), state.limitMs / 1000)}s
           </span>
           <button type="button" onClick={voice.onFinish} className="glass-btn glass-btn--sm glass-btn--primary">
@@ -61,13 +61,13 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
           </button>
         </div>
       )}
-      {busy && <p className="text-white/80">Getting the name…</p>}
+      {busy && <p className="text-ink/80">Getting the name…</p>}
       {state.kind === "heard" && (
         <>
-          <p className="text-emerald-200">
+          <p className="text-emerald-700">
             ✓ Got it. Check the name and save.
             {!state.draft.relationship && (
-              <span className="block text-amber-200">No relationship heard. Type it or listen again.</span>
+              <span className="block text-amber-700">No relationship heard. Type it or listen again.</span>
             )}
           </p>
           <YouSaid transcript={state.transcript} />
@@ -75,13 +75,13 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
       )}
       {state.kind === "no-name" && (
         <>
-          <p className="text-amber-200">{state.message}</p>
+          <p className="text-amber-700">{state.message}</p>
           <YouSaid transcript={state.transcript} />
         </>
       )}
       {state.kind === "error" && (
         <>
-          <p role="alert" className="text-red-300">
+          <p role="alert" className="text-red-600">
             {state.message}
           </p>
           <YouSaid transcript={state.transcript} />
@@ -97,7 +97,7 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
           <button type="button" onClick={voice.onListen} disabled={busy} className="glass-btn glass-btn--sm">
             🎤 {state.kind === "idle" ? "Listen for name" : "Listen again"}
           </button>
-          <label className="ml-auto flex items-center gap-1.5 text-xs text-white/60">
+          <label className="ml-auto flex items-center gap-1.5 text-xs text-ink/60">
             <input
               type="checkbox"
               checked={voice.autoListen}
@@ -107,7 +107,7 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
           </label>
         </div>
       )}
-      <p className="text-[11px] leading-snug text-white/45" title={VOICE_DISCLOSURE_DETAIL}>
+      <p className="text-[11px] leading-snug text-ink/45" title={VOICE_DISCLOSURE_DETAIL}>
         🔒 Voice is transcribed by ElevenLabs{cloudAi ? ` and read by ${cloudAi}` : ""}. Faces stay on this laptop.
       </p>
     </div>
@@ -133,14 +133,14 @@ export function EnrollmentCard({
 
   if (state.kind === "idle") {
     return state.notice ? (
-      <p role="status" className="glass relative rounded-2xl px-3 py-2 text-sm text-amber-200">
+      <p role="status" className="glass relative rounded-2xl px-3 py-2 text-sm text-amber-700">
         {state.notice}
       </p>
     ) : null;
   }
   if (state.kind === "saved") {
     return (
-      <p role="status" className="glass relative rounded-2xl px-3 py-2 text-sm text-emerald-200">
+      <p role="status" className="glass relative rounded-2xl px-3 py-2 text-sm text-emerald-700">
         Saved {state.person.displayName}. Recognizing…
       </p>
     );
@@ -151,7 +151,7 @@ export function EnrollmentCard({
         role="status"
         className="glass glass-strong animate-pop-in relative flex items-center gap-2.5 rounded-full py-2 pl-3 pr-4 text-[13px] font-medium"
       >
-        <span aria-hidden className="breathe h-2 w-2 rounded-full bg-sky-300" />
+        <span aria-hidden className="breathe h-2 w-2 rounded-full bg-sky-500" />
         New face. Hold still… capturing {state.captured}/{TARGET_SAMPLES} (needs at least {MIN_SAMPLES})
       </p>
     );
@@ -165,7 +165,7 @@ export function EnrollmentCard({
   return (
     <form
       aria-labelledby="enroll-heading"
-      className="glass glass-strong animate-pop-in scroll-soft relative flex max-h-full flex-col gap-3 overflow-y-auto rounded-[var(--radius-panel)] p-4"
+      className="glass glass-strong animate-pop-in scroll-soft relative flex max-h-full flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-[var(--radius-panel)] p-4"
       onSubmit={(event) => {
         event.preventDefault();
         onSave(name, relationship);
@@ -181,12 +181,12 @@ export function EnrollmentCard({
           <img
             src={state.previewUrl}
             alt="Captured face preview"
-            className="h-24 w-24 rounded-2xl object-cover ring-1 ring-white/20"
+            className="h-24 w-24 rounded-2xl object-cover ring-2 ring-white shadow-md"
             style={mirrored ? { transform: "scaleX(-1)" } : undefined}
           />
         )}
         <div className="flex flex-1 flex-col gap-2">
-          <label className="flex flex-col gap-1 text-[13px] font-medium text-white/80">
+          <label className="flex flex-col gap-1 text-[13px] font-medium text-ink/80">
             Name
             <input
               autoFocus={!voice}
@@ -198,7 +198,7 @@ export function EnrollmentCard({
               placeholder="e.g. Bhavya"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[13px] font-medium text-white/80">
+          <label className="flex flex-col gap-1 text-[13px] font-medium text-ink/80">
             Relationship (optional)
             <input
               maxLength={120}
@@ -213,10 +213,10 @@ export function EnrollmentCard({
       {voice ? (
         <VoicePanel voice={voice} />
       ) : (
-        <p className="text-xs text-white/55">Type the name to save this person.</p>
+        <p className="text-xs text-ink/55">Type the name to save this person.</p>
       )}
       {state.error && (
-        <p role="alert" className="text-sm text-red-300">
+        <p role="alert" className="text-sm text-red-600">
           {state.error}
         </p>
       )}

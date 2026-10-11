@@ -21,10 +21,10 @@ export type HealthState =
 function Row({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-6 py-1">
-      <dt className="text-white/60">{label}</dt>
+      <dt className="text-ink/60">{label}</dt>
       <dd className="flex items-center gap-1.5 font-medium">
         {ok !== undefined && (
-          <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${ok ? "bg-emerald-300" : "bg-red-300"}`} />
+          <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`} />
         )}
         {value}
       </dd>
@@ -56,7 +56,7 @@ function Diagnostics({ health, status, cameraLive }: { health: HealthState; stat
         variant="quiet"
         label="Diagnostics"
         tooltipSide="bottom"
-        icon={<ActivityIcon size={17} className={problem ? "text-amber-300" : undefined} />}
+        icon={<ActivityIcon size={17} className={problem ? "text-amber-600" : undefined} />}
         aria-expanded={open}
         aria-controls="diagnostics-panel"
         onClick={() => setOpen((value) => !value)}
@@ -71,7 +71,7 @@ function Diagnostics({ health, status, cameraLive }: { health: HealthState; stat
         inert={!open}
         className="float-in absolute right-0 top-[calc(100%+10px)] z-40 w-[min(300px,calc(100vw-32px))] rounded-[22px] p-4 text-[13px]"
       >
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/55">Diagnostics</h2>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-ink/55">Diagnostics</h2>
         <dl aria-live="polite">
           {health.kind === "loading" && <Row label="Backend" value="Checking backend…" />}
           {health.kind === "error" && <Row label="Backend" value={health.message} ok={false} />}
@@ -108,7 +108,7 @@ export function AppHeader({
     >
       <div className="flex items-baseline gap-2">
         <h1 className="text-[17px] font-semibold tracking-tight">forget-not</h1>
-        <span className="hidden text-xs text-white/55 sm:inline">Familiar-person reminder prototype</span>
+        <span className="hidden text-xs text-ink/55 sm:inline">Familiar-person reminder prototype</span>
       </div>
       {fixtureMode && <FixtureModeBanner />}
       <Diagnostics health={health} status={status} cameraLive={cameraLive} />

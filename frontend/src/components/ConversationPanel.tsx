@@ -40,16 +40,16 @@ function ReviewForm({
       }}
     >
       {draft.facts.length > 0 && (
-        <ul aria-label="Highlights" className="flex flex-col gap-1.5 text-sm text-white/85">
+        <ul aria-label="Highlights" className="flex flex-col gap-1.5 text-sm text-ink/85">
           {draft.facts.slice(0, 3).map((fact) => (
             <li key={fact.evidenceQuote} className="flex gap-2">
-              <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-white/70" />
+              <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent/60" />
               <span>{fact.text}</span>
             </li>
           ))}
         </ul>
       )}
-      <label className="flex flex-col text-[13px] font-medium text-white/80">
+      <label className="flex flex-col text-[13px] font-medium text-ink/80">
         Reminder
         <textarea
           required
@@ -61,7 +61,7 @@ function ReviewForm({
         />
       </label>
       {error && (
-        <p role="alert" className="text-sm text-red-300">
+        <p role="alert" className="text-sm text-red-600">
           {error}
         </p>
       )}
@@ -97,7 +97,7 @@ export function ConversationPanel({
   if (state.kind === "idle") return null;
   if (state.kind === "saved") {
     return (
-      <p role="status" className="glass-well p-3 text-sm text-emerald-200">
+      <p role="status" className="glass-well p-3 text-sm text-emerald-700">
         Saved. Next time you see {state.person.displayName}: “{cleanCue(state.cue)}”
       </p>
     );
@@ -114,8 +114,8 @@ export function ConversationPanel({
       {state.kind === "recording" && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 text-sm font-medium text-red-300">
-              <span aria-hidden className="breathe h-2.5 w-2.5 rounded-full bg-red-400 shadow-[0_0_10px_rgb(248_113_113)]" />
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-red-600">
+              <span aria-hidden className="breathe h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgb(239_68_68/0.6)]" />
               Recording… {Math.floor(state.elapsedMs / 1000)}s / {state.limitMs / 1000}s
             </span>
             <button type="button" onClick={onStop} className="glass-btn glass-btn--sm glass-btn--primary">
@@ -125,11 +125,11 @@ export function ConversationPanel({
               Cancel
             </button>
           </div>
-          <p className="text-xs text-white/55">Recording stops automatically after 60 seconds.</p>
+          <p className="text-xs text-ink/55">Recording stops automatically after 60 seconds.</p>
         </>
       )}
-      {state.kind === "transcribing" && <p className="text-sm text-white/80">Transcribing…</p>}
-      {state.kind === "drafting" && <p className="text-sm text-white/80">Writing a reminder…</p>}
+      {state.kind === "transcribing" && <p className="text-sm text-ink/80">Transcribing…</p>}
+      {state.kind === "drafting" && <p className="text-sm text-ink/80">Writing a reminder…</p>}
       {state.kind === "review" && (
         <ReviewForm
           draft={state.draft}
@@ -141,7 +141,7 @@ export function ConversationPanel({
       )}
       {state.kind === "failed" && (
         <>
-          <p role="alert" className="text-sm text-amber-200">
+          <p role="alert" className="text-sm text-amber-700">
             {state.message}
           </p>
           <div className="flex gap-2">
@@ -156,7 +156,7 @@ export function ConversationPanel({
           </div>
         </>
       )}
-      <p className="text-[11px] leading-snug text-white/45" title={DISCLOSURE_DETAIL}>
+      <p className="text-[11px] leading-snug text-ink/45" title={DISCLOSURE_DETAIL}>
         🔒 Voice is transcribed by ElevenLabs. Faces stay on this laptop.
       </p>
     </section>

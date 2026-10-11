@@ -27,7 +27,7 @@ function PersonItem({ person, onDelete }: { person: Person; onDelete: (person: P
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[15px] font-semibold leading-tight">{person.displayName}</p>
-        <p className="truncate text-[13px] leading-snug text-white/65">{person.relationship ?? "Relationship not set"}</p>
+        <p className="truncate text-[13px] leading-snug text-ink/65">{person.relationship ?? "Relationship not set"}</p>
       </div>
       {confirming ? (
         <div className="animate-pop-in flex shrink-0 items-center gap-1.5">
@@ -58,7 +58,7 @@ function PersonItem({ person, onDelete }: { person: Person; onDelete: (person: P
           onClick={() => setConfirming(true)}
           aria-label={`Delete ${person.displayName}`}
           title="Delete and remove all their saved data"
-          className="glass-btn glass-btn--sm glass-btn--icon glass-btn--quiet text-white/60 hover:text-red-300"
+          className="glass-btn glass-btn--sm glass-btn--icon glass-btn--quiet text-ink/60 hover:text-red-600"
         >
           <TrashIcon size={17} />
         </button>
@@ -104,14 +104,14 @@ export function PeopleDrawer({
       className="float-in flex max-h-full w-[min(360px,calc(100vw-24px))] touch-pan-y flex-col overflow-hidden rounded-[var(--radius-panel)]"
     >
       <header className="flex items-center gap-3 p-4 pb-3">
-        <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
+        <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-full bg-white/75 shadow-sm">
           <PeopleIcon size={19} />
         </span>
         <div className="min-w-0 flex-1">
           <h2 id="people-heading" className="text-lg font-semibold leading-tight tracking-tight">
             People
           </h2>
-          <p className="text-xs text-white/55">
+          <p className="text-xs text-ink/55">
             {loading ? "Loading…" : `${people.length} saved ${people.length === 1 ? "person" : "people"}`}
           </p>
         </div>
@@ -119,7 +119,7 @@ export function PeopleDrawer({
       </header>
       <div className="scroll-soft flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 pb-4">
         {error && (
-          <p role="alert" className="glass-well px-3 py-2 text-sm text-amber-200">
+          <p role="alert" className="glass-well px-3 py-2 text-sm text-amber-700">
             {error}
           </p>
         )}
@@ -130,7 +130,7 @@ export function PeopleDrawer({
             ))}
           </div>
         ) : people.length === 0 ? (
-          <p className="py-8 text-center text-sm leading-relaxed text-white/65">
+          <p className="py-8 text-center text-sm leading-relaxed text-ink/65">
             No one saved yet. Look at the camera to add someone.
           </p>
         ) : (
