@@ -14,8 +14,8 @@ import { ApiClientError, type IntroductionDraft } from "@/lib/api-client";
 import { type AiProvider, draftIntroductionWithProvider } from "@/lib/audio/ai-drafts";
 import { transcribeAudio } from "@/lib/audio/speech-client";
 
-// 7 s (human decision 2026-10-10, after trying 8 s and 12 s). Done stops it early.
-export const INTRODUCTION_WINDOW_MS = 7000;
+// 19 s (human decisions: 7 s on 2026-10-10 after trying 8 s and 12 s; 9 s, then 19 s on 2026-10-11). Done stops it early.
+export const INTRODUCTION_WINDOW_MS = 19_000;
 
 export type VoiceIntroductionState =
   | { kind: "idle" }

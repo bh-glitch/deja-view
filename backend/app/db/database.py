@@ -65,6 +65,11 @@ MIGRATIONS: tuple[str, ...] = (
     CREATE INDEX conversations_person_order
         ON conversations (person_id, ended_at DESC, created_at DESC, id DESC);
     """,
+    # v2 (Bhavya, human decision 2026-10-10): automatic conversations save without review.
+    # Every conversation saved before this was reviewed, hence the default.
+    """
+    ALTER TABLE conversations ADD COLUMN reviewed_by_user INTEGER NOT NULL DEFAULT 1;
+    """,
 )
 SCHEMA_VERSION = len(MIGRATIONS)
 

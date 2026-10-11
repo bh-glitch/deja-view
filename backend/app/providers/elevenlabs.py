@@ -124,7 +124,8 @@ async def synthesize_speech(settings: Settings, text: str) -> bytes:
     """Return verified MP3 bytes for ``text`` using the configured voice/model.
 
     Same request Vansh validated in docs/provider-validation.md (E4): explicit voice ID,
-    ``eleven_flash_v2_5``, ``mp3_44100_128``. Bytes are checked to be MP3 before returning.
+    ``eleven_flash_v2_5``, ``mp3_44100_128``, plus ``voice_settings.speed`` (configurable,
+    default 0.9 = a little slower). Bytes are checked to be MP3 before returning.
     """
     if not settings.elevenlabs_api_key:
         raise ApiError(ErrorCode.PROVIDER_NOT_CONFIGURED, "ElevenLabs API key is not configured.")
@@ -138,7 +139,11 @@ async def synthesize_speech(settings: Settings, text: str) -> bytes:
             response = await client.post(
                 f"/v1/text-to-speech/{settings.elevenlabs_voice_id}",
                 params={"output_format": TTS_OUTPUT_FORMAT},
-                json={"text": text, "model_id": settings.elevenlabs_tts_model},
+                json={
+                    "text": text,
+                    "model_id": settings.elevenlabs_tts_model,
+                    "voice_settings": {"speed": settings.elevenlabs_tts_speed},
+                },
                 headers={"Accept": "audio/mpeg"},
             )
     except httpx.TimeoutException as exc:

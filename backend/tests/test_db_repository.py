@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 import threading
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import numpy as np
 import pytest
@@ -68,6 +68,41 @@ def test_newer_schema_is_rejected(tmp_path) -> None:
         database.initialize()
     assert info.value.code == ErrorCode.STORAGE_ERROR
     assert database.is_ready() is False
+
+
+def test_v1_conversations_stay_reviewed_after_upgrade(tmp_path) -> None:
+    from app.db.database import MIGRATIONS, _split_statements
+
+    path = tmp_path / "v1.db"
+    conn = sqlite3.connect(path)
+    for statement in _split_statements(MIGRATIONS[0]):
+        conn.execute(statement)
+    conn.execute(
+        "INSERT INTO people VALUES ('11111111-1111-4111-8111-111111111111', 'Old', NULL, "
+        "'2026-10-10T10:00:00Z', '2026-10-10T10:00:00Z', 'h')"
+    )
+    conn.execute(
+        "INSERT INTO conversations VALUES ('22222222-2222-4222-8222-222222222222', "
+        "'11111111-1111-4111-8111-111111111111', '2026-10-10T10:00:00Z', "
+        "'2026-10-10T10:01:00Z', 'hi', 'typed', "
+        """'{"summary":"s","cue":"c","facts":[]}', 0, '2026-10-10T10:01:00Z', 'h')"""
+    )
+    conn.execute("PRAGMA user_version = 1")
+    conn.commit()
+    conn.close()
+
+    database = Database(path)
+    database.initialize()
+    detail = repository.get_person_detail(database, UUID("11111111-1111-4111-8111-111111111111"))
+    assert detail.conversations[0].reviewed_by_user is True
+
+
+def test_unreviewed_automatic_conversation_is_stored_as_such(db) -> None:
+    person = repository.create_person(db, person_request(), TEST_MODEL)
+    request = conversation_request(person.id).model_copy(update={"reviewed_by_user": False})
+    saved = repository.create_conversation(db, request)
+    assert saved.reviewed_by_user is False
+    assert repository.get_person_detail(db, person.id).conversations[0].reviewed_by_user is False
 
 
 def test_uninitialized_transaction_is_storage_error(tmp_path) -> None:

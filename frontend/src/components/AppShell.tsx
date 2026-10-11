@@ -6,12 +6,17 @@
  * Voice introduction (Vansh, human-approved 2026-10-10): after capture, one 8 s listening
  * window prefills the name via ElevenLabs STT + Gemini; the user still taps Save.
  * Conversation memory (Vansh, human-approved): "Record conversation" on a recognized person
- * records up to 60 s, drafts a reviewed reminder, and saves it as that person's latest cue.
+ * records up to 25 s, drafts a reviewed reminder, and saves it as that person's latest cue.
  * Liquid Glass layout (Arnav, human-requested 2026-10-10): camera-first stage with floating
  * header, identity card, conversation and people drawers, toolbar and toasts. Recognition,
  * enrollment and API logic are unchanged; only presentation and drawer state are new.
  * Who is this? (Bhavya 2026-10-10): speaks the focused recognized person's name, relationship
  * and latest cue on request; stops when that person leaves the frame or the mic is needed.
+ * Automatic conversations (Bhavya, human requests 2026-10-10): right after someone is enrolled,
+ * their first conversation starts recording without a tap; a returning person is recorded only
+ * after a tap on the summary card's mic (privacy). Both stop at 25 s, on Stop, or when the
+ * person leaves, and are saved without asking (marked as not reviewed). The last-talk summary shows the 3 points most worth remembering and slides
+ * away after 12 s; a button at the top right brings it back.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -21,12 +26,19 @@ import { CameraViewport, type FaceOverlay } from "@/components/CameraViewport";
 import { ConversationDrawer } from "@/components/ConversationDrawer";
 import { ConversationPanel } from "@/components/ConversationPanel";
 import { EnrollmentCard } from "@/components/EnrollmentCard";
+import { GlassButton } from "@/components/glass/GlassButton";
 import { GlassFilters } from "@/components/glass/GlassFilters";
+import { MessageIcon, MicIcon } from "@/components/glass/Icons";
+import { GlassSurface } from "@/components/glass/GlassSurface";
 import { GlassToasts, type ToastItem } from "@/components/glass/GlassToast";
 import { useEdgeSwipeOpen } from "@/components/glass/useDrawer";
 import { ConversationSummary, type SummaryItem } from "@/components/ConversationSummary";
 import { PeopleDrawer } from "@/components/PeopleDrawer";
+import { Splash } from "@/components/Splash";
+import { RecordingPill } from "@/components/RecordingPill";
+import { useArrivals } from "@/hooks/useArrivals";
 import { useAutoEnrollment } from "@/hooks/useAutoEnrollment";
+import { useAutoHide } from "@/hooks/useAutoHide";
 import { useCamera } from "@/hooks/useCamera";
 import { useConversationMemory } from "@/hooks/useConversationMemory";
 import { useRecognitionLoop } from "@/hooks/useRecognitionLoop";
@@ -39,6 +51,7 @@ import {
   getHealth,
   getPerson,
   listPeople,
+  pickKeyPoints,
   type FrameResult,
   type Person,
   type PersonDetail,
@@ -50,12 +63,26 @@ import {
   trackFrame,
   type TrackerState,
 } from "@/lib/identity-tracker";
+import { MAX_KEY_POINTS, keyPointNotes, keyPointsVersion, newestPoints, uniqueNotes } from "@/lib/key-points";
 
 /** Below this width only one drawer is open at a time. */
 const NARROW_QUERY = "(max-width: 767px)";
+/** A recording ends on its own once its person has been out of view this long. */
+export const LEFT_STOP_MS = 8000;
+/** A just-enrolled person's automatic first conversation must start within this time. */
+export const AUTO_RECORD_ARM_MS = 60_000;
+/** Early in a recording, Who is this? restarts it after speaking instead of being disabled. */
+export const WHO_IS_THIS_RESTART_MS = 15_000;
 
 function matches(query: string): boolean {
   return typeof window !== "undefined" && !!window.matchMedia?.(query).matches;
+}
+
+/** The first of `ids` still armed for an automatic conversation; expired entries are dropped. */
+function firstArmed(pending: Map<string, number>, ids: string[]): string | undefined {
+  const now = Date.now();
+  for (const [id, expires] of pending) if (expires < now) pending.delete(id);
+  return ids.find((id) => pending.has(id));
 }
 
 function messageFor(error: unknown, fallback: string): string {
@@ -81,6 +108,9 @@ export function AppShell() {
 
   const camera = useCamera();
   const cameraLive = camera.state.kind === "live";
+  // Start screen (human design 2026-10-10): shown on load and after Stop camera; its logo
+  // starts the camera and plays the intro before revealing the video.
+  const [splashOpen, setSplashOpen] = useState(true);
 
   const refreshPeople = useCallback(async () => {
     try {
@@ -99,9 +129,19 @@ export function AppShell() {
     setDetails({});
   }, []);
 
-  const enrollment = useAutoEnrollment(camera.videoRef, () => {
+  // People whose conversation should start by itself once they are recognized, with the time
+  // this expires: a just-enrolled person, or a recording restarted after Who is this?.
+  const autoPending = useRef(new Map<string, number>());
+  const [autoTick, setAutoTick] = useState(0);
+  const armAutoConversation = useCallback((ids: string[]) => {
+    for (const id of ids) autoPending.current.set(id, Date.now() + AUTO_RECORD_ARM_MS);
+    setAutoTick((tick) => tick + 1);
+  }, []);
+
+  const enrollment = useAutoEnrollment(camera.videoRef, (person) => {
     resetIdentity();
     void refreshPeople();
+    armAutoConversation([person.id]); // the first conversation records itself
   });
   const enrolling = enrollment.state.kind === "capturing";
   const naming = enrollment.state.kind === "naming";
@@ -126,13 +166,21 @@ export function AppShell() {
   }, [enrollment, voice, who]);
 
   // A saved conversation refreshes that person's details so the new cue shows at once.
-  const conversation = useConversationMemory((personId) => {
-    setDetails((current) => {
-      const next = { ...current };
-      delete next[personId];
-      return next;
-    });
-  });
+  // A draft to review (or a failure to read) opens the conversation drawer for that person.
+  const conversation = useConversationMemory(
+    (personId) => {
+      setDetails((current) => {
+        const next = { ...current };
+        delete next[personId];
+        return next;
+      });
+    },
+    (person) => {
+      setChosenId(person.id);
+      setConversationOpen(true);
+      if (matches(NARROW_QUERY)) setPeopleOpen(false);
+    },
+  );
   const conversationActiveRef = useRef(false);
   useEffect(() => {
     conversationActiveRef.current = conversation.active;
@@ -204,6 +252,7 @@ export function AppShell() {
   // Stopping the camera ends any enrollment session and clears identity.
   const stopCamera = useCallback(() => {
     camera.stop();
+    setSplashOpen(true);
     if (enrollment.state.kind === "capturing" || enrollment.state.kind === "naming") dismissEnrollment();
     resetIdentity();
     setLastResult(null);
@@ -240,8 +289,8 @@ export function AppShell() {
     lockedId ?? (chosenId && recognized.some((person) => person.id === chosenId) ? chosenId : (recognized[0]?.id ?? null));
   const focusedDetail = focusedId ? (details[focusedId] ?? null) : null;
 
-  // The conversation panel opens only when the user asks (human request 2026-10-10: keep
-  // the camera on screen); the compact summary in the corner shows the last talk instead.
+  // The conversation panel opens when the user asks or a recording is ready to review (human
+  // request 2026-10-10: keep the camera on screen); the corner summary shows the last talk.
 
   const openConversation = useCallback((person?: Person) => {
     if (person) setChosenId(person.id);
@@ -264,12 +313,86 @@ export function AppShell() {
     [conversation, openConversation, who],
   );
 
+  // The summary card's mic (human request 2026-10-10): records a returning person only on a
+  // tap, keeps the camera clear (the pill above the toolbar shows progress) and saves itself.
+  const recordFromSummary = useCallback(
+    (person: Person) => {
+      who.stop();
+      void conversation.start(person, { autoSave: true });
+    },
+    [conversation, who],
+  );
+
   // Stop speaking about someone who is no longer recognized in the frame.
   const speakingId = who.state.kind === "idle" ? null : who.state.personId;
   const speakingStillHere = !speakingId || recognized.some((person) => person.id === speakingId);
   useEffect(() => {
     if (!speakingStillHere && who.busy) who.stop();
   }, [speakingStillHere, who]);
+
+  // Automatic conversation: starts for an armed person once they are recognized and nothing
+  // else needs the microphone or speaker. Returning people are recorded only on a tap.
+  const recognizedKey = recognized.map((person) => person.id).join(",");
+
+  const conversationStartRef = useRef(conversation.start);
+  const conversationStopRef = useRef(conversation.stop);
+  useEffect(() => {
+    conversationStartRef.current = conversation.start;
+    conversationStopRef.current = conversation.stop;
+  });
+
+  const voiceBusy = voice.state.kind === "listening" || voice.state.kind === "transcribing" || voice.state.kind === "understanding";
+  const autoBlocked = !cameraLive || enrolling || naming || voiceBusy || who.busy || conversation.state.kind !== "idle";
+  useEffect(() => {
+    if (autoBlocked) return;
+    const id = firstArmed(autoPending.current, recognizedKey.split(","));
+    const person = id ? details[id]?.person : undefined;
+    if (!person) return;
+    autoPending.current.clear();
+    void conversationStartRef.current(person, { autoSave: true });
+  }, [autoBlocked, autoTick, details, recognizedKey]);
+
+  // The recording ends (and is summarized) once its person has left the frame for a while.
+  const recordingNow = conversation.state.kind === "recording";
+  const lockedHere = !lockedId || recognized.some((person) => person.id === lockedId);
+  useEffect(() => {
+    if (!recordingNow || lockedHere) return;
+    const timer = window.setTimeout(() => conversationStopRef.current(), LEFT_STOP_MS);
+    return () => window.clearTimeout(timer);
+  }, [lockedHere, recordingNow]);
+
+  // Things to remember: the AI picks at most 3 saved points across all conversations,
+  // again after every new one. With 3 or fewer there is nothing to choose.
+  const [keyPoints, setKeyPoints] = useState<Record<string, { version: string; points: string[] }>>({});
+  const keyPointRequests = useRef(new Map<string, string>());
+  const pointsFor = (detail: PersonDetail | null): string[] | null => {
+    if (!detail) return null;
+    const notes = uniqueNotes(keyPointNotes(detail));
+    if (notes.length <= MAX_KEY_POINTS) return notes.map((note) => note.text);
+    const chosen = keyPoints[detail.person.id];
+    return chosen?.version === keyPointsVersion(detail) ? chosen.points : null;
+  };
+  const pointsNeeded = recognized
+    .flatMap((person) => {
+      const detail = details[person.id] ?? null;
+      return detail && detail.conversations.length > 0 && !pointsFor(detail) ? [person.id] : [];
+    })
+    .join(",");
+  useEffect(() => {
+    // One request per person and version, never cancelled: a late answer is still valid.
+    for (const id of pointsNeeded ? pointsNeeded.split(",") : []) {
+      const detail = details[id];
+      if (!detail) continue;
+      const version = keyPointsVersion(detail);
+      if (keyPointRequests.current.get(id) === version) continue; // already asked
+      keyPointRequests.current.set(id, version);
+      const notes = uniqueNotes(keyPointNotes(detail));
+      const done = (points: string[]) => setKeyPoints((current) => ({ ...current, [id]: { version, points } }));
+      pickKeyPoints({ personName: detail.person.displayName, notes })
+        .then(done)
+        .catch(() => done(newestPoints(notes))); // the AI is optional: newest points instead
+    }
+  }, [details, pointsNeeded]);
 
   useEdgeSwipeOpen("right", () => openConversation());
   useEdgeSwipeOpen("left", () => {
@@ -305,12 +428,21 @@ export function AppShell() {
   // Names live on the face tags; the corner shows only the recognized people's last talk.
   const summaryItems: SummaryItem[] =
     cameraLive && !enrolling && !naming
-      ? recognized.map((person) => ({ person, detail: details[person.id] ?? null }))
+      ? recognized.map((person) => {
+          const detail = details[person.id] ?? null;
+          return { person, detail, points: pointsFor(detail) };
+        })
       : [];
+  // The summary shows when someone arrives (once its points are ready) and slides away after 12 s.
+  const summary = useAutoHide(summaryItems.length > 0);
+  useArrivals(
+    summaryItems.flatMap((item) => (item.points ? [item.person.id] : [])),
+    summary.show,
+  );
 
   const recordDisabled = conversation.active || voice.state.kind === "listening";
   const flow =
-    conversation.state.kind !== "idle" && conversation.state.kind !== "saved" ? (
+    conversation.active ? (
       <ConversationPanel
         state={conversation.state}
         onStop={conversation.stop}
@@ -339,6 +471,13 @@ export function AppShell() {
     toasts.push({ id: "who-is-this", tone: "info", text: `🔊 ${who.state.text}` });
   if (who.state.kind === "error")
     toasts.push({ id: "who-is-this", tone: "warning", text: `${who.state.text} (Speech: ${who.state.message})`, ttlMs: 10000 });
+  if (conversation.state.kind === "dropped")
+    toasts.push({
+      id: "conversation-dropped",
+      tone: "info",
+      text: `Nothing to remember from the talk with ${conversation.state.person.displayName}.`,
+      ttlMs: 5000,
+    });
   if (conversation.state.kind === "saved")
     toasts.push({
       id: "conversation-saved",
@@ -347,132 +486,196 @@ export function AppShell() {
     });
 
   const running = camera.state.kind === "live" || camera.state.kind === "starting";
+  const conversationBusy = ["recording", "transcribing", "drafting"].includes(conversation.state.kind);
+  const lockedPerson = conversation.state.kind !== "idle" ? conversation.state.person : null;
+  const whoCanRestart =
+    conversation.state.kind === "recording" && conversation.state.elapsedMs < WHO_IS_THIS_RESTART_MS;
   const conversationAvailable = !!focusedId || !!flow;
 
   return (
     <div className="fixed inset-0 p-2 sm:p-3">
       <GlassFilters />
-      <CameraViewport
-        videoRef={camera.videoRef}
-        camera={camera.state}
-        onStart={() => void camera.start()}
-        overlays={overlays}
-        mirrored={camera.facing === "user"}
-      >
-        {/* Header */}
-        <div className="pointer-events-none absolute inset-x-3 top-3 z-30 flex justify-start sm:inset-x-4 sm:top-4">
-          <div className="pointer-events-auto max-w-full">
-            <AppHeader health={health} status={status} cameraLive={cameraLive} />
-          </div>
-        </div>
-
-        {/* Compact last-conversation summary: upper right, sliding aside while the panel is open. */}
-        <div
-          data-overlay
-          className={`absolute right-3 top-[68px] z-20 transition-transform duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-4 ${
-            conversationOpen ? "md:-translate-x-[396px]" : ""
-          } ${summaryItems.length === 0 ? "pointer-events-none" : ""}`}
-          aria-live="polite"
+      {splashOpen && (
+        <Splash
+          onStart={() => void camera.start()}
+          onDone={() => setSplashOpen(false)}
+          fixtureMode={health.kind === "ready" && health.health.mode === "fixture"}
+        />
+      )}
+      <div className="h-full w-full" inert={splashOpen}>
+        <CameraViewport
+          videoRef={camera.videoRef}
+          camera={camera.state}
+          onStart={() => void camera.start()}
+          overlays={overlays}
+          mirrored={camera.facing === "user"}
+          // The name sits at the video's own top-left corner, not the stage's.
+          videoCorner={<AppHeader fixtureMode={health.kind === "ready" && health.health.mode === "fixture"} />}
         >
-          <ConversationSummary
-            items={summaryItems}
-            onRecord={startConversation}
-            recordDisabled={recordDisabled}
-            onOpen={(person) => openConversation(person)}
-          />
-        </div>
-
-        {/* Toasts */}
-        {/* Phones: above the toolbar, clear of the identity card. Larger screens: under the header. */}
-        <div className="pointer-events-none absolute inset-x-3 bottom-[92px] z-40 flex justify-center sm:bottom-auto sm:top-20">
-          <GlassToasts toasts={toasts} />
-        </div>
-
-        {/* Drawers */}
-        <div className="pointer-events-none absolute bottom-[88px] left-3 top-[68px] z-30 flex items-start sm:left-4 sm:top-[76px]">
-          {/* Only an open drawer takes clicks; a closed one must not block the camera UI under it. */}
-          <div className={`flex max-h-full ${peopleOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
-            <PeopleDrawer
-              open={peopleOpen}
-              onClose={() => setPeopleOpen(false)}
-              people={people}
-              loading={peopleLoading}
-              error={peopleError}
-              onDelete={onDelete}
-              toggleRef={peopleToggleRef}
-            />
-          </div>
-        </div>
-        <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-4">
-          <div className={`flex max-h-full ${conversationOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
-            <ConversationDrawer
-              open={conversationOpen}
-              onClose={() => setConversationOpen(false)}
-              detail={focusedDetail}
-              loading={!!focusedId && !focusedDetail}
-              recognized={recognized}
-              focusedId={focusedId}
-              onFocus={(person) => setChosenId(person.id)}
-              onRecord={conversation.active ? undefined : startConversation}
-              recordDisabled={recordDisabled}
-              flow={flow}
-              toggleRef={conversationToggleRef}
-            />
-          </div>
-        </div>
-
-        {/* Enrollment sheet above the toolbar */}
-        {(enrolling || naming) && (
+          {/* Compact last-conversation summary: upper right, sliding aside while the panel is open
+              and off to the right after 12 s; the button in its place brings it back. */}
           <div
             data-overlay
-            className="absolute inset-x-3 bottom-[88px] z-30 flex max-h-[calc(100%-180px)] justify-center"
+            className={`absolute right-3 top-[68px] z-20 transition-[translate,opacity] duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-4 ${
+              summary.hidden
+                ? "pointer-events-none translate-x-[calc(100%+24px)] opacity-0"
+                : conversationOpen
+                  ? "md:-translate-x-[396px]"
+                  : ""
+            } ${summaryItems.length === 0 ? "pointer-events-none" : ""}`}
+            aria-live="polite"
+            inert={summary.hidden}
           >
-            <div className={`flex max-h-full ${naming ? "w-full max-w-[440px]" : ""}`}>
-              <EnrollmentCard
-                key={enrollment.state.kind}
-                state={enrollment.state}
-                onSave={(name, relationship) => void enrollment.save(name, relationship)}
-                onDismiss={dismissEnrollment}
-                mirrored={camera.facing === "user"}
-                voice={{
-                  state: voice.state,
-                  autoListen,
-                  onAutoListenChange: changeAutoListen,
-                  onListen: () => void voice.listen(),
-                  onFinish: voice.finish,
-                  onCancel: voice.cancel,
-                  onRetryDraft: voice.retryDraft,
+            <ConversationSummary
+              items={summaryItems}
+              onOpen={(person) => openConversation(person)}
+              onRecord={recordFromSummary}
+              recordDisabled={recordDisabled}
+            />
+          </div>
+          {summary.hidden && summaryItems.length > 0 && (
+            <div
+              data-overlay
+              className={`animate-pop-in absolute right-3 top-[68px] z-20 sm:right-4 sm:top-4 ${
+                conversationOpen ? "md:-translate-x-[396px]" : ""
+              }`}
+            >
+              <GlassSurface elevation="strong" className="flex gap-1 rounded-full p-1">
+                {focusedDetail && (
+                  <GlassButton
+                    variant="quiet"
+                    label={`Record conversation with ${focusedDetail.person.displayName}`}
+                    tooltipSide="bottom"
+                    icon={<MicIcon size={20} />}
+                    disabled={recordDisabled}
+                    onClick={() => recordFromSummary(focusedDetail.person)}
+                  />
+                )}
+                <GlassButton
+                  variant="quiet"
+                  label="Show things to remember"
+                  tooltipSide="bottom"
+                  icon={<MessageIcon size={20} />}
+                  onClick={summary.show}
+                />
+              </GlassSurface>
+            </div>
+          )}
+
+          {/* Toasts */}
+          {/* Phones: above the toolbar, clear of the identity card. Larger screens: under the header. */}
+          <div
+            className={`pointer-events-none absolute inset-x-3 z-40 flex justify-center sm:bottom-auto sm:top-20 ${
+              conversationBusy ? "bottom-[140px]" : "bottom-[92px]"
+            }`}
+          >
+            <GlassToasts toasts={toasts} />
+          </div>
+
+          {/* Drawers */}
+          <div className="pointer-events-none absolute bottom-[88px] left-3 top-[68px] z-30 flex items-start sm:left-4 sm:top-[76px]">
+            {/* Only an open drawer takes clicks; a closed one must not block the camera UI under it. */}
+            <div className={`flex max-h-full ${peopleOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
+              <PeopleDrawer
+                open={peopleOpen}
+                onClose={() => setPeopleOpen(false)}
+                people={people}
+                loading={peopleLoading}
+                error={peopleError}
+                onDelete={onDelete}
+                toggleRef={peopleToggleRef}
+              />
+            </div>
+          </div>
+          <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-4">
+            <div className={`flex max-h-full ${conversationOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
+              <ConversationDrawer
+                open={conversationOpen}
+                onClose={() => setConversationOpen(false)}
+                detail={focusedDetail}
+                loading={!!focusedId && !focusedDetail}
+                recognized={recognized}
+                focusedId={focusedId}
+                onFocus={(person) => setChosenId(person.id)}
+                onRecord={conversation.active ? undefined : startConversation}
+                recordDisabled={recordDisabled}
+                flow={flow}
+                toggleRef={conversationToggleRef}
+              />
+            </div>
+          </div>
+
+          {/* Enrollment sheet above the toolbar */}
+          {(enrolling || naming) && (
+            <div
+              data-overlay
+              className="absolute inset-x-3 bottom-[88px] z-30 flex max-h-[calc(100%-180px)] justify-center"
+            >
+              <div className={`flex max-h-full ${naming ? "w-full max-w-[440px]" : ""}`}>
+                <EnrollmentCard
+                  key={enrollment.state.kind}
+                  state={enrollment.state}
+                  onSave={(name, relationship) => void enrollment.save(name, relationship)}
+                  onDismiss={dismissEnrollment}
+                  mirrored={camera.facing === "user"}
+                  voice={{
+                    state: voice.state,
+                    autoListen,
+                    onAutoListenChange: changeAutoListen,
+                    onListen: () => void voice.listen(),
+                    onFinish: voice.finish,
+                    onCancel: voice.cancel,
+                    onRetryDraft: voice.retryDraft,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Toolbar, with the recording indicator above it */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex flex-col items-center gap-2 px-3 sm:bottom-4">
+            <div className="pointer-events-auto">
+              <RecordingPill
+                state={conversation.state}
+                onStop={conversation.stop}
+                onOpen={() => openConversation(lockedPerson ?? undefined)}
+              />
+            </div>
+            <div className="pointer-events-auto">
+              <CameraToolbar
+                running={running}
+                onStop={stopCamera}
+                canSwitch={camera.canSwitch}
+                onSwitch={() => void switchCamera()}
+                peopleOpen={peopleOpen}
+                onTogglePeople={togglePeople}
+                peopleCount={people.length}
+                peopleRef={peopleToggleRef}
+                conversationOpen={conversationOpen}
+                onToggleConversation={() => (conversationOpen ? setConversationOpen(false) : openConversation())}
+                conversationAvailable={conversationAvailable}
+                conversationRef={conversationToggleRef}
+                conversationActive={conversation.active}
+                whoIsThis={{
+                  available: !!focusedDetail && (!conversation.active || whoCanRestart) && voice.state.kind !== "listening",
+                  busy: who.busy,
+                  onClick: () => {
+                    if (who.busy) return who.stop();
+                    if (!focusedDetail) return;
+                    if (conversation.state.kind === "recording") {
+                      // Never record our own speech: drop the few seconds so far and record
+                      // again once the reminder has been spoken.
+                      conversation.discard();
+                      armAutoConversation([focusedDetail.person.id]);
+                    }
+                    void who.speak(focusedDetail);
+                  },
                 }}
               />
             </div>
           </div>
-        )}
-
-        {/* Toolbar */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center px-3 sm:bottom-4">
-          <div className="pointer-events-auto">
-            <CameraToolbar
-              running={running}
-              onStop={stopCamera}
-              canSwitch={camera.canSwitch}
-              onSwitch={() => void switchCamera()}
-              peopleOpen={peopleOpen}
-              onTogglePeople={togglePeople}
-              peopleCount={people.length}
-              peopleRef={peopleToggleRef}
-              conversationOpen={conversationOpen}
-              onToggleConversation={() => (conversationOpen ? setConversationOpen(false) : openConversation())}
-              conversationAvailable={conversationAvailable}
-              conversationRef={conversationToggleRef}
-              whoIsThis={{
-                available: !!focusedDetail && !conversation.active && voice.state.kind !== "listening",
-                busy: who.busy,
-                onClick: () => (who.busy ? who.stop() : focusedDetail && void who.speak(focusedDetail)),
-              }}
-            />
-          </div>
-        </div>
-      </CameraViewport>
+        </CameraViewport>
+      </div>
     </div>
   );
 }

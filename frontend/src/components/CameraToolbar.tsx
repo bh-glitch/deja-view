@@ -2,7 +2,8 @@
 /**
  * Floating camera toolbar (Arnav, human-requested Liquid Glass redesign). Only controls the
  * app already supports. "Who is this?" speaks the recognized person's name and latest cue
- * (Bhavya 2026-10-10); it is disabled until someone is recognized.
+ * (Bhavya 2026-10-10); it is disabled until someone is recognized. A red dot on the
+ * conversation button marks an automatic recording (Bhavya, human request 2026-10-10).
  */
 import type { RefObject } from "react";
 
@@ -23,6 +24,7 @@ export function CameraToolbar({
   onToggleConversation,
   conversationAvailable,
   conversationRef,
+  conversationActive = false,
   whoIsThis,
 }: {
   running: boolean;
@@ -37,6 +39,8 @@ export function CameraToolbar({
   onToggleConversation: () => void;
   conversationAvailable: boolean;
   conversationRef: RefObject<HTMLButtonElement | null>;
+  /** A conversation is being recorded or summarized; the button shows a red dot. */
+  conversationActive?: boolean;
   whoIsThis: { available: boolean; busy: boolean; onClick: () => void };
 }) {
   return (
@@ -85,17 +89,31 @@ export function CameraToolbar({
         disabled={!whoIsThis.available && !whoIsThis.busy}
         onClick={whoIsThis.onClick}
       />
-      <GlassButton
-        ref={conversationRef}
-        variant="quiet"
-        label={conversationOpen ? "Hide last conversation" : "Last conversation"}
-        icon={<MessageIcon size={21} />}
-        aria-expanded={conversationOpen}
-        aria-controls="conversation-drawer"
-        active={conversationOpen}
-        disabled={!conversationAvailable && !conversationOpen}
-        onClick={onToggleConversation}
-      />
+      <span className="relative">
+        <GlassButton
+          ref={conversationRef}
+          variant="quiet"
+          label={
+            conversationOpen
+              ? "Hide last conversation"
+              : conversationActive
+                ? "Recording conversation"
+                : "Last conversation"
+          }
+          icon={<MessageIcon size={21} />}
+          aria-expanded={conversationOpen}
+          aria-controls="conversation-drawer"
+          active={conversationOpen}
+          disabled={!conversationAvailable && !conversationOpen}
+          onClick={onToggleConversation}
+        />
+        {conversationActive && (
+          <span
+            aria-hidden
+            className="breathe pointer-events-none absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-red-400 shadow-[0_0_8px_rgb(248_113_113)]"
+          />
+        )}
+      </span>
     </GlassSurface>
   );
 }

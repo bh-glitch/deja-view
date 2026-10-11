@@ -102,7 +102,7 @@ def _openapi_with_envelopes(app: FastAPI) -> dict[str, Any]:
     if app.openapi_schema:
         return app.openapi_schema
     schema = get_openapi(
-        title="forget-not API", version=API_VERSION, routes=app.routes
+        title="déjà-view API", version=API_VERSION, routes=app.routes
     )
     envelope_ref = {"$ref": "#/components/schemas/ErrorEnvelope"}
     for path_item in schema.get("paths", {}).values():
@@ -126,7 +126,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         _init_runtime(app, settings or get_settings())
         yield
 
-    app = FastAPI(title="forget-not API", version=API_VERSION, lifespan=lifespan)
+    app = FastAPI(title="déjà-view API", version=API_VERSION, lifespan=lifespan)
 
     @app.middleware("http")
     async def _request_id(request: Request, call_next):

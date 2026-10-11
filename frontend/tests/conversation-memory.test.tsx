@@ -93,8 +93,11 @@ async function flush() {
   }
 }
 
-async function recordAndStop(result: { current: ReturnType<typeof useConversationMemory> }) {
-  await act(() => result.current.start(person));
+async function recordAndStop(
+  result: { current: ReturnType<typeof useConversationMemory> },
+  options?: { autoSave?: boolean },
+) {
+  await act(() => result.current.start(person, options));
   await act(async () => {
     vi.advanceTimersByTime(5000);
     result.current.stop();
@@ -130,11 +133,12 @@ describe("useConversationMemory", () => {
     expect(onSaved).toHaveBeenCalledWith(person.id);
   });
 
-  it("auto-stops at 60 s", async () => {
+  it("auto-stops at 25 s", async () => {
     const { result } = renderHook(() => useConversationMemory(vi.fn()));
     await act(() => result.current.start(person));
+    expect(result.current.state).toMatchObject({ kind: "recording", limitMs: 25_000 });
     await act(async () => {
-      vi.advanceTimersByTime(60_000);
+      vi.advanceTimersByTime(25_000);
     });
     await flush();
     expect(result.current.state.kind).toBe("review");
@@ -167,6 +171,41 @@ describe("useConversationMemory", () => {
     await recordAndStop(result);
     expect(result.current.state).toMatchObject({ kind: "failed", canRetryDraft: false });
     expect((result.current.state as { message: string }).message).toMatch(/Nothing memorable/);
+  });
+
+  it("drops an automatic recording that heard nothing, without asking for review", async () => {
+    mocks.draftMemory.mockRejectedValue(
+      new ApiClientError("EMPTY_TRANSCRIPT", "Nothing memorable was heard. Record again or type a note.", 422, true, null),
+    );
+    const onNeedsReview = vi.fn();
+    const { result } = renderHook(() => useConversationMemory(vi.fn(), onNeedsReview));
+    await recordAndStop(result, { autoSave: true });
+    expect(result.current.state).toMatchObject({ kind: "dropped", person });
+    expect(result.current.active).toBe(false);
+    expect(onNeedsReview).not.toHaveBeenCalled();
+    expect(mocks.createConversation).not.toHaveBeenCalled();
+  });
+
+  it("saves an automatic recording's draft without asking, marked as not reviewed", async () => {
+    mocks.createConversation.mockResolvedValue({});
+    const onSaved = vi.fn();
+    const onNeedsReview = vi.fn();
+    const { result } = renderHook(() => useConversationMemory(onSaved, onNeedsReview));
+    await recordAndStop(result, { autoSave: true });
+    expect(result.current.state).toMatchObject({ kind: "saved", cue: draft.cue });
+    expect(onSaved).toHaveBeenCalledWith(person.id);
+    expect(onNeedsReview).not.toHaveBeenCalled();
+    const [request] = mocks.createConversation.mock.calls[0];
+    expect(request).toMatchObject({ reviewedByUser: false, editedByUser: false, memory: draft });
+  });
+
+  it("falls back to the review form when an automatic save fails", async () => {
+    mocks.createConversation.mockRejectedValue(new ApiClientError("STORAGE_ERROR", "Database busy.", 503, true, null));
+    const onNeedsReview = vi.fn();
+    const { result } = renderHook(() => useConversationMemory(vi.fn(), onNeedsReview));
+    await recordAndStop(result, { autoSave: true });
+    expect(result.current.state).toMatchObject({ kind: "review", error: "Database busy." });
+    expect(onNeedsReview).toHaveBeenCalledWith(person);
   });
 
   it("retries only the draft after a provider failure", async () => {
@@ -228,14 +267,14 @@ describe("ConversationPanel and IdentityCard", () => {
     const onStop = vi.fn();
     render(
       <ConversationPanel
-        state={{ kind: "recording", person, elapsedMs: 12_400, limitMs: 60_000 }}
+        state={{ kind: "recording", person, elapsedMs: 12_400, limitMs: 25_000 }}
         onStop={onStop}
         onRetryDraft={vi.fn()}
         onSave={vi.fn()}
         onDiscard={vi.fn()}
       />,
     );
-    expect(screen.getByText(/Recording… 12s \/ 60s/)).toBeTruthy();
+    expect(screen.getByText(/Recording… 12s \/ 25s/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Stop & summarize" }));
     expect(onStop).toHaveBeenCalled();
   });

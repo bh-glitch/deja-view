@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     elevenlabs_stt_model: str = "scribe_v2"
     elevenlabs_tts_model: str = "eleven_flash_v2_5"
     elevenlabs_voice_id: str = ""
+    # Spoken reminder speed: 1.0 is the voice's normal pace, lower is slower (ElevenLabs
+    # accepts 0.7-1.2). 0.9 = a little slower (human request 2026-10-11).
+    elevenlabs_tts_speed: float = Field(default=0.9, ge=0.7, le=1.2)
     # AI drafts (human decision 2026-10-10): "ollama" runs a local model with no quota and
     # keeps transcripts on the laptop; "gemini" uses GEMINI_API_KEY. Default stays "gemini"
     # so tests and fresh clones never call a local server by accident.

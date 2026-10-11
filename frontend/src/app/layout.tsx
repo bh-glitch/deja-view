@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "forget-not",
+  title: "déjà-view",
   description: "Familiar-person reminder prototype (HackRU 2026)",
 };
 

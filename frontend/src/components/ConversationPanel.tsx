@@ -125,7 +125,7 @@ export function ConversationPanel({
               Cancel
             </button>
           </div>
-          <p className="text-xs text-white/55">Recording stops automatically after 60 seconds.</p>
+          <p className="text-xs text-white/55">Recording stops automatically after {state.limitMs / 1000} seconds.</p>
         </>
       )}
       {state.kind === "transcribing" && <p className="text-sm text-white/80">Transcribing…</p>}
