@@ -2,6 +2,7 @@
 /**
  * Record → review → save a conversation memory (Vansh, human-approved 2026-10-10).
  * The draft is editable; nothing is stored until Save. Facts keep their transcript quotes.
+ * Liquid Glass restyle (Arnav, human-requested): rendered inside the conversation drawer.
  */
 import { useState } from "react";
 
@@ -39,7 +40,7 @@ function ReviewForm({
         onSave({ summary, cue });
       }}
     >
-      <label className="flex flex-col text-sm">
+      <label className="flex flex-col text-[13px] font-medium text-white/80">
         Reminder for next time
         <textarea
           required
@@ -47,10 +48,10 @@ function ReviewForm({
           maxLength={MAX_CUE_CHARS}
           value={cue}
           onChange={(event) => setCue(event.target.value)}
-          className="rounded-md border border-zinc-400 px-2 py-1 dark:bg-zinc-900"
+          className="glass-input mt-1 resize-none text-[15px]"
         />
       </label>
-      <label className="flex flex-col text-sm">
+      <label className="flex flex-col text-[13px] font-medium text-white/80">
         Summary
         <textarea
           required
@@ -58,11 +59,11 @@ function ReviewForm({
           maxLength={MAX_SUMMARY_CHARS}
           value={summary}
           onChange={(event) => setSummary(event.target.value)}
-          className="rounded-md border border-zinc-400 px-2 py-1 text-xs dark:bg-zinc-900"
+          className="glass-input mt-1 resize-none text-[13px]"
         />
       </label>
       {draft.facts.length > 0 && (
-        <ul className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400">
+        <ul className="flex flex-col gap-1 text-xs text-white/70">
           {draft.facts.map((fact) => (
             <li key={fact.evidenceQuote}>
               • {fact.text} <span className="italic">(“{fact.evidenceQuote}”)</span>
@@ -70,13 +71,13 @@ function ReviewForm({
           ))}
         </ul>
       )}
-      <p className="text-xs text-zinc-500">Drafted by {provider.label}. Edit anything before saving.</p>
-      <details className="text-xs text-zinc-500">
+      <p className="text-xs text-white/55">Drafted by {provider.label}. Edit anything before saving.</p>
+      <details className="text-xs text-white/55">
         <summary>Transcript</summary>
         <p className="mt-1 whitespace-pre-wrap">{transcript}</p>
       </details>
       {error && (
-        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+        <p role="alert" className="text-sm text-red-300">
           {error}
         </p>
       )}
@@ -84,11 +85,11 @@ function ReviewForm({
         <button
           type="submit"
           disabled={saving || !cue.trim() || !summary.trim()}
-          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+          className="glass-btn glass-btn--primary flex-1"
         >
           {saving ? "Saving…" : "Save memory"}
         </button>
-        <button type="button" onClick={onDiscard} disabled={saving} className="rounded-md border border-zinc-400 px-3 py-1.5 text-sm">
+        <button type="button" onClick={onDiscard} disabled={saving} className="glass-btn">
           Discard
         </button>
       </div>
@@ -112,7 +113,7 @@ export function ConversationPanel({
   if (state.kind === "idle") return null;
   if (state.kind === "saved") {
     return (
-      <p role="status" className="rounded-md bg-emerald-100 p-3 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+      <p role="status" className="glass-well p-3 text-sm text-emerald-200">
         Saved. Next time you see {state.person.displayName}: “{state.cue}”
       </p>
     );
@@ -121,30 +122,30 @@ export function ConversationPanel({
     <section
       aria-labelledby="conversation-heading"
       aria-live="polite"
-      className="flex flex-col gap-2 rounded-lg border border-violet-400 bg-white p-4 dark:bg-zinc-950"
+      className="glass-well flex flex-col gap-3 p-3.5"
     >
-      <h2 id="conversation-heading" className="text-lg font-semibold">
+      <h2 id="conversation-heading" className="text-[15px] font-semibold">
         Conversation with {state.person.displayName}
       </h2>
       {state.kind === "recording" && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 text-sm font-medium text-red-700 dark:text-red-400">
-              <span aria-hidden className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-600" />
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-red-300">
+              <span aria-hidden className="breathe h-2.5 w-2.5 rounded-full bg-red-400 shadow-[0_0_10px_rgb(248_113_113)]" />
               Recording… {Math.floor(state.elapsedMs / 1000)}s / {state.limitMs / 1000}s
             </span>
-            <button type="button" onClick={onStop} className="rounded-md bg-zinc-800 px-2 py-1 text-xs text-white">
+            <button type="button" onClick={onStop} className="glass-btn glass-btn--sm glass-btn--primary">
               Stop &amp; summarize
             </button>
-            <button type="button" onClick={onDiscard} className="rounded-md border border-zinc-400 px-2 py-1 text-xs">
+            <button type="button" onClick={onDiscard} className="glass-btn glass-btn--sm">
               Cancel
             </button>
           </div>
-          <p className="text-xs text-zinc-500">Recording stops automatically after 60 seconds.</p>
+          <p className="text-xs text-white/55">Recording stops automatically after 60 seconds.</p>
         </>
       )}
-      {state.kind === "transcribing" && <p className="text-sm">Transcribing…</p>}
-      {state.kind === "drafting" && <p className="text-sm">Writing a reminder…</p>}
+      {state.kind === "transcribing" && <p className="text-sm text-white/80">Transcribing…</p>}
+      {state.kind === "drafting" && <p className="text-sm text-white/80">Writing a reminder…</p>}
       {state.kind === "review" && (
         <ReviewForm
           draft={state.draft}
@@ -158,22 +159,22 @@ export function ConversationPanel({
       )}
       {state.kind === "failed" && (
         <>
-          <p role="alert" className="text-sm text-amber-800 dark:text-amber-300">
+          <p role="alert" className="text-sm text-amber-200">
             {state.message}
           </p>
           <div className="flex gap-2">
             {state.canRetryDraft && (
-              <button type="button" onClick={onRetryDraft} className="rounded-md bg-zinc-800 px-2 py-1 text-xs text-white">
+              <button type="button" onClick={onRetryDraft} className="glass-btn glass-btn--sm glass-btn--primary">
                 Try again
               </button>
             )}
-            <button type="button" onClick={onDiscard} className="rounded-md border border-zinc-400 px-2 py-1 text-xs">
+            <button type="button" onClick={onDiscard} className="glass-btn glass-btn--sm">
               Close
             </button>
           </div>
         </>
       )}
-      <p className="text-xs text-zinc-500">{DISCLOSURE}</p>
+      <p className="text-[11px] leading-snug text-white/45">{DISCLOSURE}</p>
     </section>
   );
 }

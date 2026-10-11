@@ -7,15 +7,23 @@
  * window prefills the name via ElevenLabs STT + Gemini; the user still taps Save.
  * Conversation memory (Vansh, human-approved): "Record conversation" on a recognized person
  * records up to 60 s, drafts a reviewed reminder, and saves it as that person's latest cue.
+ * Liquid Glass layout (Arnav, human-requested 2026-10-10): camera-first stage with floating
+ * header, identity card, conversation and people drawers, toolbar and toasts. Recognition,
+ * enrollment and API logic are unchanged; only presentation and drawer state are new.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CameraPanel, type FaceOverlay } from "@/components/CameraPanel";
+import { AppHeader, type HealthState } from "@/components/AppHeader";
+import { CameraToolbar } from "@/components/CameraToolbar";
+import { CameraViewport, type FaceOverlay } from "@/components/CameraViewport";
+import { ConversationDrawer } from "@/components/ConversationDrawer";
 import { ConversationPanel } from "@/components/ConversationPanel";
 import { EnrollmentCard } from "@/components/EnrollmentCard";
-import { FixtureModeBanner } from "@/components/FixtureModeBanner";
-import { IdentityCard } from "@/components/IdentityCard";
-import { PeopleList } from "@/components/PeopleList";
+import { GlassFilters } from "@/components/glass/GlassFilters";
+import { GlassToasts, type ToastItem } from "@/components/glass/GlassToast";
+import { useEdgeSwipeOpen } from "@/components/glass/useDrawer";
+import { IdentityCard, type IdentityView } from "@/components/IdentityCard";
+import { PeopleDrawer } from "@/components/PeopleDrawer";
 import { useAutoEnrollment } from "@/hooks/useAutoEnrollment";
 import { useCamera } from "@/hooks/useCamera";
 import { useConversationMemory } from "@/hooks/useConversationMemory";
@@ -28,7 +36,6 @@ import {
   getPerson,
   listPeople,
   type FrameResult,
-  type Health,
   type Person,
   type PersonDetail,
 } from "@/lib/api-client";
@@ -40,32 +47,36 @@ import {
   type TrackerState,
 } from "@/lib/identity-tracker";
 
-type HealthState =
-  | { kind: "loading" }
-  | { kind: "ready"; health: Health }
-  | { kind: "error"; message: string };
+/** At or above this width the conversation panel may open by itself for a new person. */
+const WIDE_QUERY = "(min-width: 900px)";
+/** Below this width only one drawer is open at a time. */
+const NARROW_QUERY = "(max-width: 767px)";
+
+function matches(query: string): boolean {
+  return typeof window !== "undefined" && !!window.matchMedia?.(query).matches;
+}
 
 function messageFor(error: unknown, fallback: string): string {
   return error instanceof ApiClientError ? error.message : fallback;
 }
 
-function emptyIdentityText(result: FrameResult | null, cameraLive: boolean): string {
-  if (!cameraLive) return "Start the camera to recognize people.";
-  if (!result) return "Looking…";
-  const faces = result.faces.length;
-  if (faces === 0) return "No one in view.";
-  if (faces === 1) return "This face is not saved yet.";
-  return `${faces} faces in view, none saved yet. To add someone, have them face the camera alone.`;
-}
-
 export function AppShell() {
   const [health, setHealth] = useState<HealthState>({ kind: "loading" });
   const [people, setPeople] = useState<Person[]>([]);
+  const [peopleLoading, setPeopleLoading] = useState(true);
   const [peopleError, setPeopleError] = useState<string | null>(null);
   const [tracker, setTracker] = useState<TrackerState>(initialTracker);
   const [lastResult, setLastResult] = useState<FrameResult | null>(null);
   const [details, setDetails] = useState<Record<string, PersonDetail>>({});
   const trackerRef = useRef<TrackerState>(initialTracker);
+
+  // Drawer state belongs to the user: recognition frames never toggle it.
+  const [peopleOpen, setPeopleOpen] = useState(false);
+  const [conversationOpen, setConversationOpen] = useState(false);
+  const [chosenId, setChosenId] = useState<string | null>(null);
+  const [autoOpenedFor, setAutoOpenedFor] = useState<string | null>(null);
+  const peopleToggleRef = useRef<HTMLButtonElement>(null);
+  const conversationToggleRef = useRef<HTMLButtonElement>(null);
 
   const camera = useCamera();
   const cameraLive = camera.state.kind === "live";
@@ -76,6 +87,8 @@ export function AppShell() {
       setPeopleError(null);
     } catch (error) {
       setPeopleError(messageFor(error, "Could not load people."));
+    } finally {
+      setPeopleLoading(false);
     }
   }, []);
 
@@ -157,9 +170,14 @@ export function AppShell() {
         setHealth({ kind: "error", message: messageFor(error, "Backend health check failed.") });
       });
     listPeople(controller.signal)
-      .then((value) => setPeople(value))
+      .then((value) => {
+        setPeople(value);
+        setPeopleLoading(false);
+      })
       .catch((error: unknown) => {
-        if (!controller.signal.aborted) setPeopleError(messageFor(error, "Could not load people."));
+        if (controller.signal.aborted) return;
+        setPeopleError(messageFor(error, "Could not load people."));
+        setPeopleLoading(false);
       });
     return () => controller.abort();
   }, []);
@@ -173,7 +191,7 @@ export function AppShell() {
     for (const id of missingKey.split(",")) {
       getPerson(id, controller.signal)
         .then((value) => setDetails((current) => ({ ...current, [id]: value })))
-        .catch(() => undefined); // the face keeps its "…" label; retried on the next change
+        .catch(() => undefined); // the face keeps its pending label; retried on the next change
     }
     return () => controller.abort();
   }, [missingKey]);
@@ -194,9 +212,9 @@ export function AppShell() {
     await camera.switchFacing();
   }, [camera, dismissEnrollment, enrollment.state.kind, resetIdentity]);
 
+  // Confirmation happens inline in the People drawer.
   const onDelete = useCallback(
     async (person: Person) => {
-      if (!window.confirm(`Delete ${person.displayName} and all their saved data?`)) return;
       try {
         await deletePerson(person.id);
         resetIdentity();
@@ -208,7 +226,49 @@ export function AppShell() {
     [refreshPeople, resetIdentity],
   );
 
-  const recognized = stableIds.flatMap((id) => (details[id] ? [details[id]] : []));
+  const recognized = stableIds.flatMap((id) => (details[id] ? [details[id].person] : []));
+
+  // Which person the conversation panel shows: the recording's locked person, else the
+  // user's pick if still in view, else the first recognized person.
+  const lockedId = conversation.state.kind !== "idle" ? conversation.state.person.id : null;
+  const focusedId =
+    lockedId ?? (chosenId && recognized.some((person) => person.id === chosenId) ? chosenId : (recognized[0]?.id ?? null));
+  const focusedDetail = focusedId ? (details[focusedId] ?? null) : null;
+
+  // Open the panel by itself once per newly recognized person with history (wide screens).
+  // A person who returns does not reopen it; the user's close is respected until then.
+  const autoCandidate = focusedDetail && focusedDetail.conversations.length > 0 ? focusedDetail.person.id : null;
+  if (autoCandidate && autoCandidate !== autoOpenedFor) {
+    setAutoOpenedFor(autoCandidate);
+    if (matches(WIDE_QUERY) && !peopleOpen) setConversationOpen(true);
+  }
+
+  const openConversation = useCallback((person?: Person) => {
+    if (person) setChosenId(person.id);
+    setConversationOpen(true);
+    if (matches(NARROW_QUERY)) setPeopleOpen(false);
+  }, []);
+  const togglePeople = useCallback(() => {
+    setPeopleOpen((open) => {
+      if (!open && matches(NARROW_QUERY)) setConversationOpen(false);
+      return !open;
+    });
+  }, []);
+
+  const startConversation = useCallback(
+    (person: Person) => {
+      openConversation(person);
+      void conversation.start(person);
+    },
+    [conversation, openConversation],
+  );
+
+  useEdgeSwipeOpen("right", () => openConversation());
+  useEdgeSwipeOpen("left", () => {
+    setPeopleOpen(true);
+    if (matches(NARROW_QUERY)) setConversationOpen(false);
+  });
+
   const overlays: FaceOverlay[] =
     lastResult && !naming
       ? tracker.tracks.map((track) => {
@@ -219,7 +279,10 @@ export function AppShell() {
             frameWidth: lastResult.frameWidth,
             frameHeight: lastResult.frameHeight,
           };
-          if (!track.stableId) return { ...base, kind: "unknown" as const };
+          if (!track.stableId) {
+            // A face with a match candidate is still being confirmed; never name it early.
+            return track.candidateId ? { ...base, kind: "pending" as const } : { ...base, kind: "unknown" as const };
+          }
           if (!known) return { ...base, kind: "pending" as const, personId: track.stableId };
           return {
             ...base,
@@ -227,86 +290,178 @@ export function AppShell() {
             personId: known.person.id,
             name: known.person.displayName,
             relationship: known.person.relationship,
-            cue: known.latestCue,
-            cueAt: known.conversations[0]?.endedAt ?? null,
           };
         })
       : [];
 
-  const fixtureMode = health.kind === "ready" && health.health.mode === "fixture";
+  let identity: IdentityView;
+  if (!cameraLive || enrolling || naming) identity = { kind: "off" };
+  else if (!lastResult) identity = { kind: "looking" };
+  else if (lastResult.faces.length === 0) identity = { kind: "none" };
+  // Faces in the last frame but no tracks yet (just reset): wait for the next frame.
+  else if (tracker.tracks.length === 0) identity = { kind: "looking" };
+  else if (recognized.length > 0)
+    identity = { kind: "recognized", people: recognized, otherFaces: tracker.tracks.length - recognized.length };
+  else if (overlays.some((overlay) => overlay.kind === "pending")) identity = { kind: "pending", faces: tracker.tracks.length };
+  else identity = { kind: "unknown", faces: tracker.tracks.length };
+
+  const recordDisabled = conversation.active || voice.state.kind === "listening";
+  const flow =
+    conversation.state.kind !== "idle" && conversation.state.kind !== "saved" ? (
+      <ConversationPanel
+        state={conversation.state}
+        onStop={conversation.stop}
+        onRetryDraft={conversation.retryDraft}
+        onSave={(edited) => void conversation.save(edited)}
+        onDiscard={conversation.discard}
+      />
+    ) : null;
+
+  // Toasts mirror real state; the same message on every frame keeps one stable toast.
+  const toasts: ToastItem[] = [];
+  if (health.kind === "error") toasts.push({ id: "health", tone: "critical", text: `Backend: ${health.message}` });
+  else if (health.kind === "ready" && !health.health.vision.ready)
+    toasts.push({
+      id: "vision",
+      tone: "warning",
+      text: `Face model not ready${health.health.vision.detail ? `: ${health.health.vision.detail}` : "."}`,
+    });
+  if (cameraLive && status.kind === "error") toasts.push({ id: "recognition", tone: "critical", text: status.text });
+  if (peopleError) toasts.push({ id: "people", tone: "warning", text: peopleError });
+  if (enrollment.state.kind === "idle" && enrollment.state.notice)
+    toasts.push({ id: "enroll-notice", tone: "warning", text: enrollment.state.notice, ttlMs: 6000 });
+  if (enrollment.state.kind === "saved")
+    toasts.push({ id: "enroll-saved", tone: "success", text: `Saved ${enrollment.state.person.displayName}. Recognizing…` });
+  if (conversation.state.kind === "saved")
+    toasts.push({
+      id: "conversation-saved",
+      tone: "success",
+      text: `Saved. Next time you see ${conversation.state.person.displayName}: “${conversation.state.cue}”`,
+    });
+
+  const running = camera.state.kind === "live" || camera.state.kind === "starting";
+  const conversationAvailable = !!focusedId || !!flow;
 
   return (
-    <div className="flex min-h-full flex-col">
-      {fixtureMode && <FixtureModeBanner />}
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4 md:p-6">
-        <header className="flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <h1 className="text-2xl font-bold">forget-not</h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">Familiar-person reminder prototype</p>
-          </div>
-          <p aria-live="polite" className="text-xs text-zinc-500">
-            {health.kind === "loading" && "Checking backend…"}
-            {health.kind === "error" && <span className="text-red-700 dark:text-red-400">Backend: {health.message}</span>}
-            {health.kind === "ready" &&
-              `Backend: ${health.health.mode} · database ready: ${health.health.database.ready} · face model ready: ${health.health.vision.ready}`}
-          </p>
-        </header>
-
-        <div className="grid gap-4 md:grid-cols-[3fr_2fr]">
-          <CameraPanel
-            videoRef={camera.videoRef}
-            camera={camera.state}
-            onStart={() => void camera.start()}
-            onStop={stopCamera}
-            status={status}
-            overlays={overlays}
-            paused={enrolling}
-            mirrored={camera.facing === "user"}
-            canSwitch={camera.canSwitch}
-            onSwitch={() => void switchCamera()}
-          />
-          <div className="flex flex-col gap-4">
-            <EnrollmentCard
-              key={enrollment.state.kind}
-              state={enrollment.state}
-              onSave={(name, relationship) => void enrollment.save(name, relationship)}
-              onDismiss={dismissEnrollment}
-              mirrored={camera.facing === "user"}
-              voice={{
-                state: voice.state,
-                autoListen,
-                onAutoListenChange: changeAutoListen,
-                onListen: () => void voice.listen(),
-                onFinish: voice.finish,
-                onCancel: voice.cancel,
-                onRetryDraft: voice.retryDraft,
-              }}
-            />
-            <ConversationPanel
-              state={conversation.state}
-              onStop={conversation.stop}
-              onRetryDraft={conversation.retryDraft}
-              onSave={(edited) => void conversation.save(edited)}
-              onDiscard={conversation.discard}
-            />
-            {!naming &&
-              (recognized.length > 0 ? (
-                recognized.map((item) => (
-                  <IdentityCard
-                    key={item.person.id}
-                    person={item.person}
-                    latestCue={item.latestCue}
-                    onRecordConversation={() => void conversation.start(item.person)}
-                    recordDisabled={conversation.active || voice.state.kind === "listening"}
-                  />
-                ))
-              ) : (
-                <IdentityCard person={null} latestCue={null} emptyText={emptyIdentityText(lastResult, cameraLive)} />
-              ))}
-            <PeopleList people={people} error={peopleError} onDelete={(person) => void onDelete(person)} />
+    <div className="fixed inset-0 p-2 sm:p-3">
+      <GlassFilters />
+      <CameraViewport
+        videoRef={camera.videoRef}
+        camera={camera.state}
+        onStart={() => void camera.start()}
+        overlays={overlays}
+        mirrored={camera.facing === "user"}
+      >
+        {/* Header */}
+        <div className="pointer-events-none absolute inset-x-3 top-3 z-30 flex justify-start sm:inset-x-4 sm:top-4">
+          <div className="pointer-events-auto max-w-full">
+            <AppHeader health={health} status={status} cameraLive={cameraLive} />
           </div>
         </div>
-      </main>
+
+        {/* Identity: upper right, sliding aside while the conversation panel is open. */}
+        <div
+          data-overlay
+          className={`absolute right-3 top-[68px] z-20 transition-transform duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-4 ${
+            conversationOpen ? "md:-translate-x-[396px]" : ""
+          } ${identity.kind === "off" ? "pointer-events-none" : ""}`}
+          aria-live="polite"
+        >
+          <IdentityCard
+            view={identity}
+            onRecordConversation={startConversation}
+            recordDisabled={recordDisabled}
+            onOpenConversation={(person) => openConversation(person)}
+            focusedPersonId={focusedId}
+            conversationOpen={conversationOpen}
+          />
+        </div>
+
+        {/* Toasts */}
+        {/* Phones: above the toolbar, clear of the identity card. Larger screens: under the header. */}
+        <div className="pointer-events-none absolute inset-x-3 bottom-[92px] z-40 flex justify-center sm:bottom-auto sm:top-20">
+          <GlassToasts toasts={toasts} />
+        </div>
+
+        {/* Drawers */}
+        <div className="pointer-events-none absolute bottom-[88px] left-3 top-[68px] z-30 flex items-start sm:left-4 sm:top-[76px]">
+          <div className="pointer-events-auto flex max-h-full">
+            <PeopleDrawer
+              open={peopleOpen}
+              onClose={() => setPeopleOpen(false)}
+              people={people}
+              loading={peopleLoading}
+              error={peopleError}
+              onDelete={onDelete}
+              toggleRef={peopleToggleRef}
+            />
+          </div>
+        </div>
+        <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-4">
+          <div className="pointer-events-auto flex max-h-full">
+            <ConversationDrawer
+              open={conversationOpen}
+              onClose={() => setConversationOpen(false)}
+              detail={focusedDetail}
+              loading={!!focusedId && !focusedDetail}
+              recognized={recognized}
+              focusedId={focusedId}
+              onFocus={(person) => setChosenId(person.id)}
+              onRecord={conversation.active ? undefined : startConversation}
+              recordDisabled={recordDisabled}
+              flow={flow}
+              toggleRef={conversationToggleRef}
+            />
+          </div>
+        </div>
+
+        {/* Enrollment sheet above the toolbar */}
+        {(enrolling || naming) && (
+          <div
+            data-overlay
+            className="absolute inset-x-3 bottom-[88px] z-30 flex max-h-[calc(100%-180px)] justify-center"
+          >
+            <div className={`flex max-h-full ${naming ? "w-full max-w-[440px]" : ""}`}>
+              <EnrollmentCard
+                key={enrollment.state.kind}
+                state={enrollment.state}
+                onSave={(name, relationship) => void enrollment.save(name, relationship)}
+                onDismiss={dismissEnrollment}
+                mirrored={camera.facing === "user"}
+                voice={{
+                  state: voice.state,
+                  autoListen,
+                  onAutoListenChange: changeAutoListen,
+                  onListen: () => void voice.listen(),
+                  onFinish: voice.finish,
+                  onCancel: voice.cancel,
+                  onRetryDraft: voice.retryDraft,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Toolbar */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center px-3 sm:bottom-4">
+          <div className="pointer-events-auto">
+            <CameraToolbar
+              running={running}
+              onStop={stopCamera}
+              canSwitch={camera.canSwitch}
+              onSwitch={() => void switchCamera()}
+              peopleOpen={peopleOpen}
+              onTogglePeople={togglePeople}
+              peopleCount={people.length}
+              peopleRef={peopleToggleRef}
+              conversationOpen={conversationOpen}
+              onToggleConversation={() => (conversationOpen ? setConversationOpen(false) : openConversation())}
+              conversationAvailable={conversationAvailable}
+              conversationRef={conversationToggleRef}
+            />
+          </div>
+        </div>
+      </CameraViewport>
     </div>
   );
 }
