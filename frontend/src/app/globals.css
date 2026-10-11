@@ -569,56 +569,111 @@ body {
     opacity: 1;
   }
 
-  /* Face-button cluster keys: small white keys with fine grey glyphs. */
-  .hw-face {
+  /* L1 / R1 shoulder bumpers: white molded caps on a graphite lip, sitting on the
+     frame's top corners. Pressing pushes them down like a real bumper. */
+  .shoulder {
     position: absolute;
-    width: 26px;
-    height: 26px;
-    color: rgb(150 160 182);
+    z-index: 40;
+    top: -15px;
+    height: 21px;
+    width: clamp(130px, 15vw, 220px);
+    display: none;
+    align-items: center;
+    padding-inline: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, rgb(238 242 248) 55%, rgb(212 219 231) 100%);
+    border: 1px solid rgb(255 255 255 / 0.95);
+    box-shadow:
+      inset 0 1.5px 0 #ffffff,
+      inset 0 -2px 3px rgb(120 135 165 / 0.3),
+      0 3px 0 -0.5px rgb(36 40 50),
+      0 9px 18px -8px rgb(20 30 60 / 0.45);
+    transition:
+      transform var(--dur-med) var(--ease-spring),
+      box-shadow var(--dur-med) var(--ease-out);
+    -webkit-tap-highlight-color: transparent;
   }
-  .hw-face:hover:not(:disabled) {
-    color: rgb(var(--accent));
+  @media (min-width: 640px) {
+    .shoulder {
+      display: flex;
+    }
   }
-
-  /* Signature "jewel" key: a slightly larger key ringed by a fine breathing light. */
-  .hw-jewel {
-    width: 40px;
-    height: 40px;
+  @media (min-width: 1024px) {
+    .shoulder {
+      top: -19px;
+      height: 25px;
+    }
   }
-  .hw-jewel::before {
+  /* Rounder toward the outer corner, slightly tilted, like a controller bumper. */
+  .shoulder--left {
+    left: 38px;
+    border-radius: 20px 10px 4px 4px / 16px 10px 4px 4px;
+    transform: rotate(-1.5deg);
+    transform-origin: 100% 100%;
+    justify-content: flex-start;
+  }
+  .shoulder--right {
+    right: 38px;
+    border-radius: 10px 20px 4px 4px / 10px 16px 4px 4px;
+    transform: rotate(1.5deg);
+    transform-origin: 0% 100%;
+    justify-content: flex-end;
+  }
+  /* Fine blue light line along the top edge. */
+  .shoulder::after {
     content: "";
     position: absolute;
-    inset: -3px;
-    border-radius: inherit;
-    padding: 1.5px;
-    background: conic-gradient(
-      from 210deg,
-      rgb(var(--accent) / 0.9),
-      rgb(160 215 255 / 0.9),
-      rgb(255 255 255 / 0.4),
-      rgb(var(--accent) / 0.9)
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    filter: drop-shadow(0 0 4px rgb(var(--accent) / 0.45));
-    animation: breathe-ring 3.6s ease-in-out infinite;
+    top: 2px;
+    left: 22%;
+    right: 22%;
+    height: 1px;
+    border-radius: 1px;
+    background: linear-gradient(90deg, transparent, rgb(var(--accent) / 0.85), transparent);
+    box-shadow: 0 0 5px rgb(var(--accent) / 0.5);
+    opacity: 0.45;
+    transition: opacity var(--dur-med) var(--ease-out);
     pointer-events: none;
   }
-  @keyframes breathe-ring {
-    0%,
-    100% {
-      opacity: 0.55;
-    }
-    50% {
-      opacity: 1;
-    }
+  .shoulder-mark {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: rgb(var(--ink) / 0.38);
+    text-shadow: 0 1px 0 #ffffff;
   }
-  .hw-jewel:hover::before {
+  .shoulder:hover {
+    box-shadow:
+      inset 0 1.5px 0 #ffffff,
+      inset 0 -2px 3px rgb(120 135 165 / 0.3),
+      0 3px 0 -0.5px rgb(36 40 50),
+      0 0 0 3px rgb(var(--accent) / 0.12),
+      0 10px 20px -8px rgb(var(--accent) / 0.4);
+  }
+  .shoulder--left:hover {
+    transform: rotate(-1.5deg) translateY(-1px);
+  }
+  .shoulder--right:hover {
+    transform: rotate(1.5deg) translateY(-1px);
+  }
+  .shoulder:hover::after,
+  .shoulder:focus-visible::after {
     opacity: 1;
-    animation: none;
+  }
+  .shoulder:hover .shoulder-mark {
+    color: rgb(var(--accent));
+  }
+  .shoulder--left:active {
+    transform: rotate(-1.5deg) translateY(2px);
+    transition-duration: 90ms;
+  }
+  .shoulder--right:active {
+    transform: rotate(1.5deg) translateY(2px);
+    transition-duration: 90ms;
+  }
+  .shoulder:active {
+    box-shadow:
+      inset 0 1px 0 #ffffff,
+      inset 0 -1px 2px rgb(120 135 165 / 0.3),
+      0 1px 0 0 rgb(36 40 50);
   }
 
   .hw-key:hover .glass-tip,

@@ -18,7 +18,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader, type HealthState } from "@/components/AppHeader";
 import { AmbientBackdrop } from "@/components/AmbientBackdrop";
 import { CameraToolbar } from "@/components/CameraToolbar";
-import { CornerAccessory } from "@/components/CornerAccessory";
 import { CameraViewport, type FaceOverlay } from "@/components/CameraViewport";
 import { ConversationDrawer } from "@/components/ConversationDrawer";
 import { ConversationPanel } from "@/components/ConversationPanel";
@@ -28,6 +27,7 @@ import { GlassToasts, type ToastItem } from "@/components/glass/GlassToast";
 import { useEdgeSwipeOpen } from "@/components/glass/useDrawer";
 import { ConversationSummary, type SummaryItem } from "@/components/ConversationSummary";
 import { PeopleDrawer } from "@/components/PeopleDrawer";
+import { ShoulderButtons } from "@/components/ShoulderButtons";
 import { useAutoEnrollment } from "@/hooks/useAutoEnrollment";
 import { useCamera } from "@/hooks/useCamera";
 import { useConversationMemory } from "@/hooks/useConversationMemory";
@@ -355,131 +355,131 @@ export function AppShell() {
     <div className="fixed inset-0 p-3 sm:p-5 lg:p-7">
       <AmbientBackdrop videoRef={camera.videoRef} active={cameraLive} mirrored={camera.facing === "user"} />
       <GlassFilters />
-      <CameraViewport
-        videoRef={camera.videoRef}
-        camera={camera.state}
-        onStart={() => void camera.start()}
-        overlays={overlays}
-        mirrored={camera.facing === "user"}
-      >
-        {/* Header row: brand shell on the left, the matching accessory key on the right. */}
-        <div className="pointer-events-none absolute inset-x-3 top-3 z-30 flex items-start justify-between gap-3 sm:inset-x-4 sm:top-4">
-          <div className="pointer-events-auto min-w-0">
-            <AppHeader health={health} status={status} cameraLive={cameraLive} />
-          </div>
-          {/* Decorative for now, so phones keep the room for the header. */}
-          <div className="pointer-events-auto hidden shrink-0 sm:block">
-            <CornerAccessory />
-          </div>
-        </div>
-
-        {/* Compact last-conversation summary: upper right, sliding aside while the panel is open. */}
-        <div
-          data-overlay
-          className={`absolute right-3 top-[68px] z-20 transition-transform duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-[124px] ${
-            conversationOpen ? "md:-translate-x-[396px]" : ""
-          } ${summaryItems.length === 0 ? "pointer-events-none" : ""}`}
-          aria-live="polite"
+      {/* L1 / R1 bumpers sit on the frame's top corners (decorative until given roles). */}
+      <div className="relative h-full">
+        <ShoulderButtons />
+        <CameraViewport
+          videoRef={camera.videoRef}
+          camera={camera.state}
+          onStart={() => void camera.start()}
+          overlays={overlays}
+          mirrored={camera.facing === "user"}
         >
-          <ConversationSummary
-            items={summaryItems}
-            onRecord={startConversation}
-            recordDisabled={recordDisabled}
-            onOpen={(person) => openConversation(person)}
-          />
-        </div>
-
-        {/* Toasts */}
-        {/* Phones: above the toolbar, clear of the identity card. Larger screens: under the header. */}
-        <div className="pointer-events-none absolute inset-x-3 bottom-[92px] z-40 flex justify-center sm:bottom-auto sm:top-20">
-          <GlassToasts toasts={toasts} />
-        </div>
-
-        {/* Drawers */}
-        <div className="pointer-events-none absolute bottom-[88px] left-3 top-[68px] z-30 flex items-start sm:left-4 sm:top-[76px]">
-          {/* Only an open drawer takes clicks; a closed one must not block the camera UI under it. */}
-          <div className={`flex max-h-full ${peopleOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
-            <PeopleDrawer
-              open={peopleOpen}
-              onClose={() => setPeopleOpen(false)}
-              people={people}
-              loading={peopleLoading}
-              error={peopleError}
-              onDelete={onDelete}
-              toggleRef={peopleToggleRef}
-            />
+          {/* Header */}
+          <div className="pointer-events-none absolute inset-x-3 top-3 z-30 flex justify-start sm:inset-x-4 sm:top-4">
+            <div className="pointer-events-auto max-w-full">
+              <AppHeader health={health} status={status} cameraLive={cameraLive} />
+            </div>
           </div>
-        </div>
-        <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-[124px]">
-          <div className={`flex max-h-full ${conversationOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
-            <ConversationDrawer
-              open={conversationOpen}
-              onClose={() => setConversationOpen(false)}
-              detail={focusedDetail}
-              loading={!!focusedId && !focusedDetail}
-              recognized={recognized}
-              focusedId={focusedId}
-              onFocus={(person) => setChosenId(person.id)}
-              onRecord={conversation.active ? undefined : startConversation}
-              recordDisabled={recordDisabled}
-              flow={flow}
-              toggleRef={conversationToggleRef}
-            />
-          </div>
-        </div>
 
-        {/* Enrollment sheet above the toolbar */}
-        {(enrolling || naming) && (
+          {/* Compact last-conversation summary: upper right, sliding aside while the panel is open. */}
           <div
             data-overlay
-            className="absolute inset-x-3 bottom-[88px] z-30 flex max-h-[calc(100%-180px)] justify-center"
+            className={`absolute right-3 top-[68px] z-20 transition-transform duration-[560ms] [transition-timing-function:var(--ease-spring)] sm:right-4 sm:top-4 ${
+              conversationOpen ? "md:-translate-x-[396px]" : ""
+            } ${summaryItems.length === 0 ? "pointer-events-none" : ""}`}
+            aria-live="polite"
           >
-            <div className={`flex max-h-full ${naming ? "w-full max-w-[440px]" : ""}`}>
-              <EnrollmentCard
-                key={enrollment.state.kind}
-                state={enrollment.state}
-                onSave={(name, relationship) => void enrollment.save(name, relationship)}
-                onDismiss={dismissEnrollment}
-                mirrored={camera.facing === "user"}
-                voice={{
-                  state: voice.state,
-                  autoListen,
-                  onAutoListenChange: changeAutoListen,
-                  onListen: () => void voice.listen(),
-                  onFinish: voice.finish,
-                  onCancel: voice.cancel,
-                  onRetryDraft: voice.retryDraft,
+            <ConversationSummary
+              items={summaryItems}
+              onRecord={startConversation}
+              recordDisabled={recordDisabled}
+              onOpen={(person) => openConversation(person)}
+            />
+          </div>
+
+          {/* Toasts */}
+          {/* Phones: above the toolbar, clear of the identity card. Larger screens: under the header. */}
+          <div className="pointer-events-none absolute inset-x-3 bottom-[92px] z-40 flex justify-center sm:bottom-auto sm:top-20">
+            <GlassToasts toasts={toasts} />
+          </div>
+
+          {/* Drawers */}
+          <div className="pointer-events-none absolute bottom-[88px] left-3 top-[68px] z-30 flex items-start sm:left-4 sm:top-[76px]">
+            {/* Only an open drawer takes clicks; a closed one must not block the camera UI under it. */}
+            <div className={`flex max-h-full ${peopleOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
+              <PeopleDrawer
+                open={peopleOpen}
+                onClose={() => setPeopleOpen(false)}
+                people={people}
+                loading={peopleLoading}
+                error={peopleError}
+                onDelete={onDelete}
+                toggleRef={peopleToggleRef}
+              />
+            </div>
+          </div>
+          <div className="pointer-events-none absolute bottom-[88px] right-3 top-[68px] z-30 flex items-start justify-end sm:right-4 sm:top-4">
+            <div className={`flex max-h-full ${conversationOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
+              <ConversationDrawer
+                open={conversationOpen}
+                onClose={() => setConversationOpen(false)}
+                detail={focusedDetail}
+                loading={!!focusedId && !focusedDetail}
+                recognized={recognized}
+                focusedId={focusedId}
+                onFocus={(person) => setChosenId(person.id)}
+                onRecord={conversation.active ? undefined : startConversation}
+                recordDisabled={recordDisabled}
+                flow={flow}
+                toggleRef={conversationToggleRef}
+              />
+            </div>
+          </div>
+
+          {/* Enrollment sheet above the toolbar */}
+          {(enrolling || naming) && (
+            <div
+              data-overlay
+              className="absolute inset-x-3 bottom-[88px] z-30 flex max-h-[calc(100%-180px)] justify-center"
+            >
+              <div className={`flex max-h-full ${naming ? "w-full max-w-[440px]" : ""}`}>
+                <EnrollmentCard
+                  key={enrollment.state.kind}
+                  state={enrollment.state}
+                  onSave={(name, relationship) => void enrollment.save(name, relationship)}
+                  onDismiss={dismissEnrollment}
+                  mirrored={camera.facing === "user"}
+                  voice={{
+                    state: voice.state,
+                    autoListen,
+                    onAutoListenChange: changeAutoListen,
+                    onListen: () => void voice.listen(),
+                    onFinish: voice.finish,
+                    onCancel: voice.cancel,
+                    onRetryDraft: voice.retryDraft,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Toolbar */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center px-3 sm:bottom-4">
+            <div className="pointer-events-auto">
+              <CameraToolbar
+                running={running}
+                onStop={stopCamera}
+                canSwitch={camera.canSwitch}
+                onSwitch={() => void switchCamera()}
+                peopleOpen={peopleOpen}
+                onTogglePeople={togglePeople}
+                peopleCount={people.length}
+                peopleRef={peopleToggleRef}
+                conversationOpen={conversationOpen}
+                onToggleConversation={() => (conversationOpen ? setConversationOpen(false) : openConversation())}
+                conversationAvailable={conversationAvailable}
+                conversationRef={conversationToggleRef}
+                whoIsThis={{
+                  available: !!focusedDetail && !conversation.active && voice.state.kind !== "listening",
+                  busy: who.busy,
+                  onClick: () => (who.busy ? who.stop() : focusedDetail && void who.speak(focusedDetail)),
                 }}
               />
             </div>
           </div>
-        )}
-
-        {/* Toolbar */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center px-3 sm:bottom-4">
-          <div className="pointer-events-auto">
-            <CameraToolbar
-              running={running}
-              onStop={stopCamera}
-              canSwitch={camera.canSwitch}
-              onSwitch={() => void switchCamera()}
-              peopleOpen={peopleOpen}
-              onTogglePeople={togglePeople}
-              peopleCount={people.length}
-              peopleRef={peopleToggleRef}
-              conversationOpen={conversationOpen}
-              onToggleConversation={() => (conversationOpen ? setConversationOpen(false) : openConversation())}
-              conversationAvailable={conversationAvailable}
-              conversationRef={conversationToggleRef}
-              whoIsThis={{
-                available: !!focusedDetail && !conversation.active && voice.state.kind !== "listening",
-                busy: who.busy,
-                onClick: () => (who.busy ? who.stop() : focusedDetail && void who.speak(focusedDetail)),
-              }}
-            />
-          </div>
-        </div>
-      </CameraViewport>
+        </CameraViewport>
+      </div>
     </div>
   );
 }
