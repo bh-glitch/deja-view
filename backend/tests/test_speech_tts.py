@@ -63,6 +63,7 @@ def test_speak_returns_verified_mp3_with_configured_voice_and_model(monkeypatch,
     assert json.loads(request.content) == {
         "text": "Hi, this is Demo Alex.",
         "model_id": "eleven_flash_v2_5",
+        "voice_settings": {"speed": 0.9},  # a little slower than normal
     }
 
 

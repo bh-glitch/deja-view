@@ -11,6 +11,25 @@ Maintained by Bhavya. No agent changes the phase on its own.
 | Speech | ElevenLabs `scribe_v2` (STT) + `eleven_flash_v2_5` (TTS) |
 | Repository | https://github.com/bh-glitch/forget-not (private) |
 
+### 2026-10-11 update: déjà-view (merged from `bhavya/auto-conversation`)
+
+Product renamed **déjà-view** (repository, folders and packages keep the forget-not name).
+Human-requested changes, recorded in `docs/decisions.md`:
+- Start screen: title + V logo; tapping the logo starts the camera with an intro animation.
+  Header over the video: just the logo and name. Brand font Plus Jakarta Sans is bundled
+  (`frontend/src/app/fonts/`, OFL licence), so builds still need no network.
+- Conversations: a just-enrolled person's first conversation records automatically; returning
+  people are recorded only via the mic on their summary card. Recordings stop at 25 s (or when
+  the person leaves) and auto-save, marked `reviewedByUser: false`. A recording pill shows progress.
+- Summary card: larger text, slides away after 12 s (button brings it back), and shows the 3
+  saved points most worth remembering, picked by the new `POST /api/ai/key-points`.
+- Introduction window 19 s; spoken reminders a little slower (`ELEVENLABS_TTS_SPEED=0.9`).
+
+After pulling: `cd backend && uv sync --locked` (no new dependencies) and restart the backend.
+**Your database upgrades itself to schema v2** on startup (adds `conversations.reviewed_by_user`,
+existing rows stay reviewed). Back up `data/app.db` first if you may need to run an older
+backend against it: an older backend refuses a v2 database.
+
 ### Catching up from `cb194eb`
 
 ```sh

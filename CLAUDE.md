@@ -1,4 +1,4 @@
-# forget-not — Claude Code entry instructions
+# déjà-view (forget-not repository) — Claude Code entry instructions
 
 Read README.md and AGENTS.md completely before editing. README.md is the shared project specification; AGENTS.md contains the common agent rules. Follow the assigned person's ownership, branch, current phase, and committed contracts.
 

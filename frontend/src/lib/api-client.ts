@@ -24,6 +24,8 @@ export type Health = Schemas["Health"];
 export type CreatePersonRequest = Schemas["CreatePersonRequest"];
 export type CreateConversationRequest = Schemas["CreateConversationRequest"];
 export type ServerErrorCode = Schemas["ErrorCode"];
+export type KeyPointNote = Schemas["KeyPointNote"];
+export type KeyPointsRequest = Schemas["KeyPointsRequest"];
 
 /** Client-side failures that never reach the server's error envelope. */
 export type ClientErrorCode = "NETWORK_ERROR" | "INVALID_RESPONSE";
@@ -152,4 +154,9 @@ export function draftIntroduction(transcript: string, signal?: AbortSignal): Pro
 export function draftMemory(transcript: string, personName?: string | null, signal?: AbortSignal): Promise<MemoryDraft> {
   const payload = personName ? { transcript, personName } : { transcript };
   return apiJson<MemoryDraft>("/ai/memory", jsonInit("POST", payload, signal));
+}
+
+/** The saved points (at most 3) worth showing when the person returns; chosen, never rewritten. */
+export async function pickKeyPoints(request: KeyPointsRequest, signal?: AbortSignal): Promise<string[]> {
+  return (await apiJson<Schemas["KeyPoints"]>("/ai/key-points", jsonInit("POST", request, signal))).points;
 }

@@ -36,7 +36,7 @@ from app.vision.gallery import Gallery, GalleryEntry
 _PERSON_COLUMNS = "id, display_name, relationship, created_at, updated_at, request_hash"
 _CONVERSATION_COLUMNS = (
     "id, person_id, started_at, ended_at, transcript, source, memory_json, "
-    "edited_by_user, created_at, request_hash"
+    "edited_by_user, created_at, request_hash, reviewed_by_user"
 )
 
 
@@ -92,7 +92,7 @@ def _conversation_from_row(row: sqlite3.Row) -> Conversation:
                 "transcript": row["transcript"],
                 "source": row["source"],
                 "memory": MemoryDraft.model_validate_json(row["memory_json"]),
-                "reviewedByUser": True,
+                "reviewedByUser": bool(row["reviewed_by_user"]),
                 "editedByUser": bool(row["edited_by_user"]),
                 "createdAt": row["created_at"],
             }
@@ -250,7 +250,7 @@ def create_conversation(db: Database, request: CreateConversationRequest) -> Con
 
         conn.execute(
             f"INSERT INTO conversations ({_CONVERSATION_COLUMNS}) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 conversation_id,
                 str(request.person_id),
@@ -262,6 +262,7 @@ def create_conversation(db: Database, request: CreateConversationRequest) -> Con
                 int(request.edited_by_user),
                 _now(),
                 request_hash,
+                int(request.reviewed_by_user),
             ),
         )
         row = conn.execute(

@@ -82,7 +82,7 @@ Replaces the "press Listen to enroll" trigger. Confirmation before saving is kep
 2. **Capture:** 3–5 enrollment samples via `/api/vision/enrollment-sample` from the live
    camera, all from the same single face. Abort and reset if the face is lost, a second face
    appears, or the box jumps (visitor change).
-3. **Listen:** one window of at most **7 s** (human decision 2026-10-10, after trying 8 s and 12 s). The mic indicator and "Listening for an
+3. **Listen:** one window of at most **19 s** (human decisions: 7 s on 2026-10-10 after trying 8 s and 12 s; 9 s, then 19 s on 2026-10-11). The mic indicator and "Listening for an
    introduction…" text are visible, with a **Cancel** button; the window stops early when
    the user presses Stop. It never opens during TTS playback.
 4. **Parse:** `transcribeAudio` → `draftIntroduction`. With `intent="introduction"` and a
@@ -127,3 +127,31 @@ Replaces "one visitor at a time / multiple faces name nobody".
 its camera (front or back via **Switch camera**). Testing convenience only: no public hosting or
 phone app. The backend stays bound to 127.0.0.1. The front-camera preview is mirrored, the back
 camera is not, and overlay boxes follow the same rule. See `docs/setup.md` §7.
+
+## Automatic conversations and key points (human decision, 2026-10-10)
+
+Replaces "record conversations only after an explicit button press" and the mic button on the
+last-talk summary.
+- **Auto-record (revised, human request for privacy):** only a just-enrolled person's first
+  conversation starts by itself, once they are recognized after the Save tap (armed for 60 s).
+  A returning person is recorded only after a tap on the mic on the last-talk summary card (or on
+  the small mic beside the "show" button when the card has slid away). Never during enrollment,
+  voice introduction or Who is this? speech. Recordings stop at **25 s** (human request: short
+  demo; was 60 s), on Stop, or 8 s after the locked person leaves the frame.
+- **Auto-save:** an automatic or summary-mic recording's draft is saved without asking (human request). It is
+  stored with `reviewedByUser: false` (schema v2 adds `conversations.reviewed_by_user`, default 1
+  for older rows); if the save fails, the review form opens. Recordings started with Record still
+  need the Save tap. An auto-saved recording that heard nothing worth keeping is dropped quietly
+  (state `dropped`, a short toast).
+- **Indicator:** a pill above the toolbar shows "Recording with <name>", the time and Stop, then
+  "Summarizing…"; a red dot also marks the toolbar's conversation button.
+- **Who is this? during a recording:** in the first 15 s it discards the recording, speaks, and
+  recording restarts afterwards (never records our own speech). Later it is disabled.
+- **Summary:** slides off to the right 12 s after someone arrives; a button at the top right
+  brings it back for another 12 s. Larger text (15 px points) on a more solid tint so it reads
+  comfortably over the video, still about 300 px wide.
+- **Key points:** the summary shows at most 3 saved points about the person, chosen across all
+  conversations. `POST /api/ai/key-points` (`KeyPointsRequest` → `KeyPoints`) gets the saved
+  notes (facts, or the reminder when a conversation has none; newest first, at most 30) and the
+  AI returns note numbers only, so every point is saved text, never new text. With 3 or fewer
+  distinct notes there is no AI call; if the AI fails, the newest 3 are shown.

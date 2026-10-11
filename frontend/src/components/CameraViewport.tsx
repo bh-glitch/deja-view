@@ -3,7 +3,8 @@
  * Camera-first stage (Arnav, human-requested Liquid Glass redesign; replaces CameraPanel by
  * Ishan/Bhavya). The <video> sits in a box with the stream's own aspect ratio, fitted inside
  * the stage, so face-box percentages map exactly onto the picture (no cropping/stretching).
- * Floating UI is passed as `children` and is positioned against the whole stage.
+ * Floating UI is passed as `children` and is positioned against the whole stage; `videoCorner`
+ * is pinned to the video picture's own top-left corner (human request 2026-10-11).
  */
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
@@ -19,7 +20,8 @@ const COMPACT_WIDTH = 480;
 export type { FaceOverlay };
 
 function CameraPlaceholder({ camera, onStart }: { camera: CameraState; onStart: () => void }) {
-  if (camera.kind === "live") return null;
+  // "off" is the déjà-view start screen (Splash); this card covers starting and errors.
+  if (camera.kind === "live" || camera.kind === "off") return null;
   const starting = camera.kind === "starting";
   const failed = camera.kind === "error";
   return (
@@ -63,6 +65,7 @@ export function CameraViewport({
   onStart,
   overlays,
   mirrored,
+  videoCorner,
   children,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -70,6 +73,8 @@ export function CameraViewport({
   onStart: () => void;
   overlays: FaceOverlay[];
   mirrored: boolean;
+  /** Shown at the top-left of the video itself, not of the surrounding stage. */
+  videoCorner?: ReactNode;
   children?: ReactNode;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
@@ -132,6 +137,11 @@ export function CameraViewport({
             overlays.map((overlay, index) => (
               <FaceTag key={overlay.key} overlay={overlay} rect={rects[index]} compact={compact} />
             ))}
+          {videoCorner && (
+            <div data-overlay className="pointer-events-none absolute left-4 top-4 z-30 sm:left-5 sm:top-5">
+              {videoCorner}
+            </div>
+          )}
         </div>
       </div>
       <CameraPlaceholder camera={camera} onStart={onStart} />

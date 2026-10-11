@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/key-points": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Key Points */
+        post: operations["pickKeyPoints"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/memory": {
         parameters: {
             query?: never;
@@ -239,9 +256,9 @@ export interface components {
             personId: string;
             /**
              * Reviewedbyuser
-             * @constant
+             * @description False when an automatic conversation was saved without the user's review.
              */
-            reviewedByUser: true;
+            reviewedByUser: boolean;
             source: components["schemas"]["ConversationSource"];
             /** Startedat */
             startedAt: string;
@@ -292,9 +309,9 @@ export interface components {
             personId: string;
             /**
              * Reviewedbyuser
-             * @constant
+             * @description False when an automatic conversation was saved without the user's review.
              */
-            reviewedByUser: true;
+            reviewedByUser: boolean;
             source: components["schemas"]["ConversationSource"];
             /**
              * Startedat
@@ -541,6 +558,50 @@ export interface components {
          * @enum {string}
          */
         IntroductionIntent: "introduction" | "other";
+        /**
+         * KeyPointNote
+         * @description One saved point (a fact or reminder) and when its conversation ended.
+         */
+        KeyPointNote: {
+            /**
+             * Endedat
+             * Format: date-time
+             */
+            endedAt: string;
+            /** Text */
+            text: string;
+        };
+        /** KeyPoints */
+        KeyPoints: {
+            /**
+             * Points
+             * @description Chosen verbatim from the request notes.
+             */
+            points: string[];
+        };
+        /**
+         * KeyPointsRequest
+         * @description Saved points about one person, newest conversation first. The AI picks the few the
+         *     user most needs to remember; it never writes new text.
+         */
+        KeyPointsRequest: {
+            /** Notes */
+            notes: components["schemas"]["KeyPointNote"][];
+            /** Personname */
+            personName?: string | null;
+        };
+        /** KeyPointsResponse */
+        KeyPointsResponse: {
+            data: components["schemas"]["KeyPoints"];
+            /**
+             * Ok
+             * @default true
+             * @constant
+             */
+            ok: true;
+            /** Requestid */
+            requestId: string;
+        };
         /** MemoryDraft */
         "MemoryDraft-Input": {
             /** Cue */
@@ -720,6 +781,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IntroductionDraftResponse"];
+                };
+            };
+            /** @description Error envelope (non-2xx) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    pickKeyPoints: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyPointsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyPointsResponse"];
                 };
             };
             /** @description Error envelope (non-2xx) */

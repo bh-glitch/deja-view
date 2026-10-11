@@ -1,4 +1,4 @@
-"""Canonical wire schema for forget-not (owner: Bhavya).
+"""Canonical wire schema for déjà-view (owner: Bhavya).
 
 This module is the single source of truth for every JSON request/response.
 It is exported to ``contracts/openapi.json`` and generated into
@@ -53,6 +53,8 @@ MAX_CUE_CHARS = 240
 MAX_FACTS = 3
 MAX_FACT_CHARS = 240
 MAX_EVIDENCE_CHARS = 300
+MAX_KEY_POINTS = 3
+MAX_KEY_POINT_NOTES = 30
 REQUEST_ID_HEADER = "X-Request-ID"
 
 
@@ -368,7 +370,9 @@ class Conversation(WireModel):
     transcript: Transcript
     source: ConversationSource
     memory: MemoryDraft
-    reviewed_by_user: Literal[True]
+    reviewed_by_user: bool = Field(
+        description="False when an automatic conversation was saved without the user's review."
+    )
     edited_by_user: bool
     created_at: UtcDateTime
 
@@ -448,7 +452,9 @@ class CreateConversationRequest(WireModel):
     transcript: Transcript
     source: ConversationSource
     memory: MemoryDraft
-    reviewed_by_user: Literal[True]
+    reviewed_by_user: bool = Field(
+        description="False when an automatic conversation was saved without the user's review."
+    )
     edited_by_user: bool
 
     @model_validator(mode="after")
@@ -476,6 +482,30 @@ class MemoryRequest(WireModel):
 
     transcript: Transcript
     person_name: DisplayName | None = None
+
+
+class KeyPointNote(WireModel):
+    """One saved point (a fact or reminder) and when its conversation ended."""
+
+    text: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_CUE_CHARS)
+    ]
+    ended_at: UtcDateTime
+
+
+class KeyPointsRequest(WireModel):
+    """Saved points about one person, newest conversation first. The AI picks the few the
+    user most needs to remember; it never writes new text."""
+
+    person_name: DisplayName | None = None
+    notes: Annotated[list[KeyPointNote], Field(min_length=1, max_length=MAX_KEY_POINT_NOTES)]
+
+
+class KeyPoints(WireModel):
+    points: Annotated[
+        list[Annotated[str, StringConstraints(min_length=1, max_length=MAX_CUE_CHARS)]],
+        Field(max_length=MAX_KEY_POINTS, description="Chosen verbatim from the request notes."),
+    ]
 
 
 class SpeakRequest(WireModel):
@@ -516,3 +546,6 @@ class IntroductionDraftResponse(SuccessEnvelope[IntroductionDraft]): ...
 
 
 class MemoryDraftResponse(SuccessEnvelope[MemoryDraft]): ...
+
+
+class KeyPointsResponse(SuccessEnvelope[KeyPoints]): ...

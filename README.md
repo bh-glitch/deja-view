@@ -1,8 +1,8 @@
-# forget-not — four-person HackRU 2026 prototype
+# déjà-view — four-person HackRU 2026 prototype
 
 ## Product
 
-forget-not is an assistive familiar-person reminder prototype inspired by face blindness and dementia. A laptop webcam recognizes a previously enrolled friend or family member and shows their confirmed name, relationship, and a short reminder from their last saved conversation. The user can press **Who is this?** to hear the information aloud.
+déjà-view (formerly forget-not; the repository keeps that name) is an assistive familiar-person reminder prototype inspired by face blindness and dementia. A laptop webcam recognizes a previously enrolled friend or family member and shows their confirmed name, relationship, and a short reminder from their last saved conversation. The user can press **Who is this?** to hear the information aloud.
 
 Build one working local demo in a 24-hour hackathon. Use consenting teammates, demo names, and fictional conversation details. Describe this as a prototype.
 
@@ -12,7 +12,7 @@ Confirmed MVP decisions:
 - The user explicitly enables the camera. Recognition then runs automatically.
 - When an unfamiliar face stays in view, the app captures face samples and opens one short, visible listening window for an introduction ("Hey, I'm Bhavya"). The user confirms the proposed person with one tap before enrollment. (Decision 2026-10-10; replaces the Listen-button trigger. See `docs/decisions.md`.)
 - Store 3–5 face embeddings per person, with their confirmed name and optional relationship.
-- Record conversations only after an explicit button press; review the generated reminder before saving.
+- A just-enrolled person's first conversation records automatically; a returning person is recorded only after a tap on the mic on their summary card. Recordings last at most 25 s (stopping early when the person leaves), and the reminder is saved without a review step, marked as not reviewed. Conversations recorded from the drawer's Record button are still reviewed before saving. (Human decision 2026-10-10, replaces the explicit Record press; see `docs/decisions.md`.)
 - Show the latest saved reminder when the person returns. New people show **No saved conversation yet**.
 - Unknown, weak, or ambiguous matches remain **Unknown**. Each face is labelled on its own; one person's name is never shown on two faces, and names never carry over to a different face.
 - Use SQLite on the demo computer. Saved people and conversations survive a backend restart.
@@ -304,7 +304,7 @@ Role focus:
 
 ### First prompt to paste into Claude Code
 
-> Read README.md, AGENTS.md, and CLAUDE.md. Build forget-not using this specification. You are Bhavya's initial setup/integration agent. Begin with Phase 0 only: inspect the repository, preserve existing work, create the common scaffold and exact typed interfaces, verify locked installs/imports/startup/proxy/check commands, and commit the foundation. Create concise instructions that require every future agent to follow this README. Prepare the other three assignments and their branch/handoff prompts. Then report the foundation commit, setup steps, tests actually run, and blockers, and stop feature implementation until I invite the teammates. Do not spawn additional agents, build four independent apps, publish, start subscriptions, or claim placeholder features are complete.
+> Read README.md, AGENTS.md, and CLAUDE.md. Build déjà-view using this specification. You are Bhavya's initial setup/integration agent. Begin with Phase 0 only: inspect the repository, preserve existing work, create the common scaffold and exact typed interfaces, verify locked installs/imports/startup/proxy/check commands, and commit the foundation. Create concise instructions that require every future agent to follow this README. Prepare the other three assignments and their branch/handoff prompts. Then report the foundation commit, setup steps, tests actually run, and blockers, and stop feature implementation until I invite the teammates. Do not spawn additional agents, build four independent apps, publish, start subscriptions, or claim placeholder features are complete.
 
 ## Final demo checklist
 

@@ -322,10 +322,6 @@ html[data-refract] .glass-refract {
   transition-delay: 250ms, 250ms;
 }
 
-:focus-visible {
-  outline: 2px solid rgb(var(--tone-info));
-  outline-offset: 3px;
-}
 
 /* ------------------------------------------------------------------------- */
 /* Camera stage                                                               */
@@ -486,5 +482,42 @@ html[data-refract] .glass-refract {
   }
   .glass-btn:active:not(:disabled) {
     transform: none;
+  }
+}
+
+/* No focus box anywhere (human request 2026-10-11): no outline after a click or tap in any
+   browser (Safari, Chrome, iOS), no tap highlight, no Firefox inner border. Keyboard users
+   still see glass buttons' hover/active styling and tooltips; there is no focus ring. */
+*,
+*:focus,
+*:focus-visible {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+button::-moz-focus-inner {
+  border: 0;
+}
+.splash-logo,
+.splash-logo:focus,
+.splash-logo:focus-visible {
+  box-shadow: none;
+}
+
+/* "Tap the logo to start": a slow game-style blink. Steady for reduced-motion users. */
+@keyframes splash-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+.splash-blink {
+  animation: splash-blink 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash-blink {
+    animation: none;
   }
 }

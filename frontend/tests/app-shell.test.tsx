@@ -29,7 +29,8 @@ describe("AppShell", () => {
   it("shows the fixture badge and people from the backend in fixture mode", async () => {
     vi.stubGlobal("fetch", routeFetch(fixtures.health, fixtures.peopleList));
     render(<AppShell />);
-    expect(await screen.findByText("Fixture mode — synthetic data")).toBeTruthy();
+    // Shown on the start screen and in the header: never hidden while data is synthetic.
+    expect((await screen.findAllByText("Fixture mode — synthetic data")).length).toBe(2);
     expect(await screen.findByText("Demo Alex")).toBeTruthy();
     // The drawer is closed (inert) until People is pressed; delete stays available inside it.
     const people = screen.getByRole("button", { name: "People" });
@@ -39,22 +40,26 @@ describe("AppShell", () => {
     expect(screen.getByRole("button", { name: "Delete Demo Sam" })).toBeTruthy();
   });
 
-  it("shows no badge, live diagnostics and an empty people state in live mode", async () => {
+  it("shows only the name in the header, no badge, and an empty people state in live mode", async () => {
     const live = { ...fixtures.health, data: { ...fixtures.health.data, mode: "live" } };
     const empty = { ...fixtures.peopleList, data: { people: [] } };
     vi.stubGlobal("fetch", routeFetch(live, empty));
     render(<AppShell />);
-    expect(await screen.findByText(/Backend: live/)).toBeTruthy();
+    expect(await screen.findByText(/No one saved yet/)).toBeTruthy();
+    // Start screen title + header name; no diagnostics or tagline (human request 2026-10-11).
+    expect(screen.getAllByRole("heading", { name: "déjà-view" })).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Diagnostics" })).toBeNull();
+    expect(screen.queryByText("Familiar-person reminder prototype")).toBeNull();
     expect(screen.queryByText("Fixture mode — synthetic data")).toBeNull();
     expect(await screen.findByText(/No one saved yet/)).toBeTruthy();
   });
 
-  it("starts with the camera off and a single Start camera button", () => {
+  it("starts on the déjà-view screen with the logo as the single Start camera button", () => {
     vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => undefined)));
     render(<AppShell />);
+    expect(screen.getAllByRole("heading", { name: "déjà-view" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Start camera" })).toHaveProperty("disabled", false);
     expect(screen.queryByRole("button", { name: "Stop camera" })).toBeNull();
-    expect(screen.getByText("Camera is off")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Who is this\?/ })).toHaveProperty("disabled", true);
     // Nobody is recognized, so there is no conversation to open yet.
     expect(screen.getByRole("button", { name: "Last conversation" })).toHaveProperty("disabled", true);
