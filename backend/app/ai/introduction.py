@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 from pydantic import BaseModel
@@ -40,8 +41,10 @@ for example: "I'm your brother" -> "brother"; "your friend from college" -> "fri
 college"; "I'm Ishan's twin brother" -> "Ishan's twin brother"; "I'm Bhavya's best friend"
 -> "Bhavya's best friend"; "we're on the same hackathon team" -> "same hackathon team";
 "I live next door" -> "live next door"; "I work with Bhavya" -> "works with Bhavya";
-"I'm in your CS class" -> "in your CS class". Leave out "I'm", "I am" and "your". Never infer a
-relationship from names, tone or context, and never invent words that were not said.
+"I'm in your CS class" -> "in your CS class"; "Bhavya is my best friend" -> "Bhavya's best
+friend"; "Ishan is my brother" -> "Ishan's brother". Leave out "I'm", "I am" and "your".
+Never infer a relationship from names, tone or context, and never invent words that were
+not said.
 Null only when no connection is stated.
 relationshipEvidence: the span copied character-for-character from the transcript that
 contains the relationship; null when relationship is null."""
@@ -85,6 +88,48 @@ def _clean_relationship(value: str | None) -> str | None:
     return relationship or None
 
 
+_FILLER_WORDS = {"s", "is", "am", "are", "my", "your", "the", "a", "an", "of", "i", "im"}
+_NOT_A_NAME = {"this", "that", "it", "he", "she", "they", "there", "here", "what", "who", "name"}
+_REL_WORDS = r"[A-Za-z][A-Za-z' -]{0,40}?"
+_END = r"(?=\s*(?:[.,!?;]|\band\b|\bthank|$))"
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", text.casefold().replace("'s", " s").replace("’s", " s"))
+
+
+def _supported_by(relationship: str, evidence: str) -> bool:
+    """Every meaningful word of the relationship was actually said in the evidence span."""
+    said = set(_words(evidence))
+    meaningful = [word for word in _words(relationship) if word not in _FILLER_WORDS]
+    return bool(meaningful) and all(word in said for word in meaningful)
+
+
+def relationship_from_patterns(transcript: str, speaker: str) -> tuple[str, str] | None:
+    """Backup when the model returns no relationship: a few literal phrasings only.
+
+    Returns (relationship, evidence span). Never guesses: the words come from the transcript.
+    """
+    patterns = [
+        # "Bhavya is my best friend" -> "Bhavya's best friend"
+        (rf"\b([A-Z][a-z]+) is my ({_REL_WORDS}){_END}", lambda m: f"{m[1]}'s {m[2]}", 1),
+        # "I'm Ishan's twin brother" / "I am Bhavya's teammate"
+        (rf"\b(?:I'm|I am|Im)\s+([A-Z][a-z]+(?:'s|’s)\s+{_REL_WORDS}){_END}", lambda m: m[1], 1),
+        # "I'm your brother" -> "brother"
+        (rf"\b(?:I'm|I am|Im)\s+your\s+({_REL_WORDS}){_END}", lambda m: m[1], None),
+    ]
+    for pattern, build, name_group in patterns:
+        for match in re.finditer(pattern, transcript):
+            if name_group is not None:
+                other = match[name_group].split("'")[0].split("’")[0]
+                if other.casefold() in _NOT_A_NAME or other.casefold() == speaker.casefold():
+                    continue
+            relationship = " ".join(build(match).split())
+            if 0 < len(relationship.split()) <= 6 and len(relationship) <= MAX_RELATIONSHIP_CHARS:
+                return relationship, match[0]
+    return None
+
+
 def ground_introduction(transcript: str, output: IntroductionOutput) -> IntroductionDraft:
     """Keep only what the transcript literally supports; otherwise intent="other"."""
     if output.intent != "introduction":
@@ -103,9 +148,13 @@ def ground_introduction(transcript: str, output: IntroductionOutput) -> Introduc
         or relationship_evidence is None
         or len(relationship) > MAX_RELATIONSHIP_CHARS
         or len(relationship_evidence) > MAX_EVIDENCE_CHARS
-        or relationship.casefold() not in relationship_evidence.casefold()
+        or not _supported_by(relationship, relationship_evidence)
     ):
         relationship, relationship_evidence = None, None
+    if relationship is None:
+        found = relationship_from_patterns(transcript, name)
+        if found is not None:
+            relationship, relationship_evidence = _clean_relationship(found[0]), found[1]
 
     return IntroductionDraft(
         intent=IntroductionIntent.INTRODUCTION,
