@@ -154,3 +154,25 @@ Through the app (`/api/ai/*` via the Next.js proxy, header `X-AI-Provider: ollam
 
 Every memory draft is reviewed and editable before it is saved, which covers occasional
 attribution mistakes.
+
+## Claude API — 2026-10-10 (Bhavya)
+
+**Human decision:** the local model was slow (~12 s per memory draft, plus slower face
+recognition while it ran; measured on the M3) and missed relationships, so AI drafts run on the
+Claude API with `AI_PROVIDER=anthropic`, `ANTHROPIC_MODEL=claude-haiku-5-5` (team's choice:
+fastest and cheapest). Ollama and Gemini remain selectable. `anthropic==1.13.0`,
+`messages.parse` with the existing Pydantic schemas, thinking disabled for these short tasks.
+
+Real calls with the team key (fictional/demo content):
+
+| Input | Result | Latency |
+|---|---|---|
+| "Hi, my name's Arnav. Bhavya is my best friend. Thank you" | Arnav / Bhavya's best friend | 1.6–2.7 s |
+| "Hey, I'm Arnav and I'm Ishan's twin brother." | Arnav / Ishan's twin brother | 1.7 s |
+| "Hi I'm Arnav, nice to meet you, I work with Bhavya." | Arnav / work with Bhavya | 1.7 s |
+| "Yo, Arnav. Ishan's twin." | Arnav / Ishan's twin (a possessive is never accepted as a name) | 1.4 s |
+| "This is my friend Sam, he says hi." | not a self-introduction | 1.4 s |
+| Memory draft (Chipotle / pottery chat, personName=Bhavya) | 2 named, distinct bullets; no gender guess | 2.1–2.8 s |
+
+Transcript text goes to Anthropic when this provider is used; face images never do. The
+enrollment card's privacy line says "read by Claude".
