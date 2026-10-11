@@ -83,7 +83,7 @@ async function flush() {
 }
 
 describe("useVoiceIntroduction", () => {
-  it("listens 8 s, auto-stops, transcribes and drafts the introduction", async () => {
+  it("listens for the window, auto-stops, transcribes and drafts the introduction", async () => {
     mocks.transcribeAudio.mockResolvedValue("Hi, I'm Demo Alex, Sam's cousin.");
     mocks.draftIntroduction.mockResolvedValue(introduction);
     const { result } = renderHook(() => useVoiceIntroduction());
@@ -224,14 +224,30 @@ describe("EnrollmentCard with voice", () => {
     );
     expect(screen.getByRole("heading").textContent).toBe("Save Demo Alex?");
     expect(screen.getByText("✓ Got it. Check the name and save.")).toBeTruthy();
-    // No raw transcript or model name on screen (human request 2026-10-10).
-    expect(document.body.textContent).not.toContain("Hi, I'm Demo Alex, Sam's cousin.");
+    // What was heard stays visible as a fallback; the model name does not.
+    expect(document.body.textContent).toContain("You said: “Hi, I'm Demo Alex, Sam's cousin.”");
     expect(document.body.textContent).not.toMatch(/qwen|local AI/);
+    expect(document.body.textContent).not.toContain("No relationship heard");
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Demo Alex");
     expect((screen.getByLabelText("Relationship (optional)") as HTMLInputElement).value).toBe("Sam's cousin");
     expect(onSave).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Save Demo Alex" }));
     expect(onSave).toHaveBeenCalledWith("Demo Alex", "Sam's cousin");
+  });
+
+  it("says when no relationship was heard, and shows the words to copy from", () => {
+    const noRelationship = { ...introduction, relationship: null, relationshipEvidence: null };
+    render(
+      <EnrollmentCard
+        state={naming}
+        onSave={vi.fn()}
+        onDismiss={vi.fn()}
+        voice={voiceProps({ kind: "heard", transcript: "Hi, I'm Demo Alex. I work with Sam.", draft: noRelationship, provider: LOCAL })}
+      />,
+    );
+    expect(screen.getByText("No relationship heard. Type it or listen again.")).toBeTruthy();
+    expect(document.body.textContent).toContain("You said: “Hi, I'm Demo Alex. I work with Sam.”");
+    expect((screen.getByLabelText("Relationship (optional)") as HTMLInputElement).value).toBe("");
   });
 
   it("lets the user correct the heard name", () => {
@@ -267,7 +283,7 @@ describe("EnrollmentCard with voice", () => {
     const disclosure = screen.getByText(/transcribed by ElevenLabs/);
     expect(disclosure.textContent).not.toMatch(/Gemini/);
     expect(disclosure.textContent).toContain("Faces stay on this laptop");
-    expect(document.body.textContent).not.toContain("Hello there");
+    expect(document.body.textContent).toContain("You said: “Hello there”");
     fireEvent.click(screen.getByRole("button", { name: /Listen again/ }));
     expect(voice.onListen).toHaveBeenCalled();
   });

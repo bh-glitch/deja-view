@@ -39,7 +39,8 @@ whenever they state it in words. Copy a short phrase (at most 6 words) from the 
 for example: "I'm your brother" -> "brother"; "your friend from college" -> "friend from
 college"; "I'm Ishan's twin brother" -> "Ishan's twin brother"; "I'm Bhavya's best friend"
 -> "Bhavya's best friend"; "we're on the same hackathon team" -> "same hackathon team";
-"I live next door" -> "live next door". Leave out "I'm", "I am" and "your". Never infer a
+"I live next door" -> "live next door"; "I work with Bhavya" -> "works with Bhavya";
+"I'm in your CS class" -> "in your CS class". Leave out "I'm", "I am" and "your". Never infer a
 relationship from names, tone or context, and never invent words that were not said.
 Null only when no connection is stated.
 relationshipEvidence: the span copied character-for-character from the transcript that
