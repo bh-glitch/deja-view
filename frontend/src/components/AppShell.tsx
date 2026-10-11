@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AppHeader, type HealthState } from "@/components/AppHeader";
+import { AmbientBackdrop } from "@/components/AmbientBackdrop";
 import { CameraToolbar } from "@/components/CameraToolbar";
 import { CameraViewport, type FaceOverlay } from "@/components/CameraViewport";
 import { ConversationDrawer } from "@/components/ConversationDrawer";
@@ -350,7 +351,8 @@ export function AppShell() {
   const conversationAvailable = !!focusedId || !!flow;
 
   return (
-    <div className="fixed inset-0 p-2 sm:p-3">
+    <div className="fixed inset-0 p-3 sm:p-5 lg:p-7">
+      <AmbientBackdrop videoRef={camera.videoRef} active={cameraLive} mirrored={camera.facing === "user"} />
       <GlassFilters />
       <CameraViewport
         videoRef={camera.videoRef}

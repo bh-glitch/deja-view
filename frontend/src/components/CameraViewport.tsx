@@ -1,8 +1,10 @@
 "use client";
 /**
  * Camera-first stage (Arnav, human-requested Liquid Glass redesign; replaces CameraPanel by
- * Ishan/Bhavya). The <video> sits in a box with the stream's own aspect ratio, fitted inside
- * the stage, so face-box percentages map exactly onto the picture (no cropping/stretching).
+ * Ishan/Bhavya). The <video> sits in a box with the stream's own aspect ratio that covers the
+ * stage (edges cropped, like a FaceTime call) when the shapes are close, or fits inside it when
+ * covering would crop too much; either way face-box percentages map exactly onto the picture
+ * (no object-fit, no stretching).
  * Floating UI is passed as `children` and is positioned against the whole stage.
  */
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
@@ -15,6 +17,16 @@ import type { CameraState } from "@/hooks/useCamera";
 
 /** Below this displayed video width (px), tags use the compact style (phones). */
 const COMPACT_WIDTH = 480;
+/** Fill the stage (cropping edges) only if that hides at most this share of the picture;
+ * otherwise fit it whole and let the ambient glow fill the rest (e.g. landscape video on a phone). */
+const MAX_COVER_CROP = 0.3;
+
+/** Video box width in px: cover the stage when the crop is small, else contain. */
+export function videoBoxWidth(stageW: number, stageH: number, ratio: number): number {
+  const cover = Math.max(stageW, stageH * ratio);
+  const contain = Math.min(stageW, stageH * ratio);
+  return 1 - contain / cover <= MAX_COVER_CROP ? cover : contain;
+}
 
 export type { FaceOverlay };
 
@@ -76,8 +88,10 @@ export function CameraViewport({
   children?: ReactNode;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
   const [compact, setCompact] = useState(false);
-  const [aspect, setAspect] = useState("16 / 9");
+  const [ratio, setRatio] = useState(16 / 9);
+  const [stage, setStage] = useState<{ w: number; h: number } | null>(null);
   const live = camera.kind === "live";
 
   useEffect(() => {
@@ -88,12 +102,22 @@ export function CameraViewport({
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) =>
+      setStage({ w: entry.contentRect.width, h: entry.contentRect.height }),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // Match the box to the real stream shape (phones often give portrait video).
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     const update = () => {
-      if (video.videoWidth && video.videoHeight) setAspect(`${video.videoWidth} / ${video.videoHeight}`);
+      if (video.videoWidth && video.videoHeight) setRatio(video.videoWidth / video.videoHeight);
     };
     update();
     video.addEventListener("loadedmetadata", update);
@@ -107,25 +131,32 @@ export function CameraViewport({
   const rects = overlays.map((overlay) => faceRect(overlay, mirrored));
 
   return (
-    <section aria-label="Camera" className="stage relative h-full w-full overflow-hidden stage-card rounded-[34px]">
+    <section
+      ref={stageRef}
+      aria-label="Camera"
+      className={`stage relative h-full w-full overflow-hidden rounded-[34px] ${live ? "stage-live" : "stage-card"}`}
+    >
       <div className="absolute inset-0 flex items-center justify-center">
         <div
           ref={boxRef}
           className={`video-box relative ${live ? "" : "invisible"}`}
-          style={{ ["--ar" as string]: aspect }}
+          style={{
+            aspectRatio: `${ratio}`,
+            width: stage ? `${videoBoxWidth(stage.w, stage.h, ratio)}px` : "100%",
+          }}
         >
           {/* Front-camera preview is mirrored like a selfie; captured frames never are. */}
           <video
             ref={videoRef}
             muted
             playsInline
-            className="block h-full w-full rounded-[28px] bg-slate-900 object-contain shadow-[0_20px_50px_-24px_rgb(30_60_110/0.55)]"
+            className="block h-full w-full bg-slate-900 object-cover"
             style={mirrored ? { transform: "scaleX(-1)" } : undefined}
           />
           {/* Light edge haze so the frosted overlays blend into the frame. */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-[28px]"
+            className="pointer-events-none absolute inset-0"
             style={{
               background:
                 "linear-gradient(180deg, rgb(10 30 60 / 0.16), transparent 20%, transparent 74%, rgb(10 30 60 / 0.22))",
