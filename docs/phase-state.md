@@ -4,12 +4,25 @@ Maintained by Bhavya. No agent changes the phase on its own.
 
 | Field | Value |
 |---|---|
-| Current phase | **2 — MVP modules (partial)**: storage + vision merged; Ishan auto-listen UI released |
-| Next permitted work | Ishan: Phase 2 UI incl. auto-listen enrollment. Vansh: finish Phase 1 provider checks, then Phase 2. Arnav: fixes on request. Bhavya: calibration + integration |
-| Approved base commit | `a3ea6bb` on `main` (PR #5 UI shell, PR #6 storage, PR #7 vision + integration) |
-| Contract version | API 0.1.0 (`contracts/openapi.json`) |
-| Model | InsightFace 2.1, `buffalo_l` (checksums in `models/manifest.json`); embedding dimension **512 verified** (Phase 1 probe, `docs/vision-validation.md`) |
+| Current phase | **3 — Integration: complete live journey on `main`; team continues from here** |
+| Approved base commit | `cb194eb` on `main` (PRs #5–#21) |
+| What works (verified live) | Camera → multi-face recognition → face tags; auto-enrollment (7 s voice intro → name + relationship → one-tap save); Who is this? speech; record → 3-bullet memory → save; compact last-talk card; phone over LAN (HTTPS) |
+| AI provider | Claude API `claude-haiku-5-5` (`AI_PROVIDER=anthropic`); Ollama/Gemini selectable |
+| Speech | ElevenLabs `scribe_v2` (STT) + `eleven_flash_v2_5` (TTS) |
 | Repository | https://github.com/bh-glitch/forget-not (private) |
+
+### Catching up from `cb194eb`
+
+```sh
+git switch main && git pull
+cd backend && uv sync --locked          # new dependency: anthropic==1.13.0
+cd ../frontend && npm ci
+```
+
+`backend/.env` (never committed) needs `PROTOTYPE_MODE=live`, `DATABASE_PATH=../data/app.db`,
+`AI_PROVIDER=anthropic`, `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`
+(get keys privately from Bhavya, not via GitHub). Weights: `scripts/prepare-models.py`.
+Phone testing: `docs/setup.md` §7. New work: branch from `main`, open a PR, Bhavya merges.
 
 ## Phase 1a — UI layout shell (merged: PR #5, `0f49c5e`; checks re-verified by Bhavya)
 
