@@ -1,4 +1,4 @@
-# déjà-view (forget-not repository) agent instructions
+# déjà-view agent instructions
  
 Read README.md before editing. It defines the product, stack, ownership, shared interfaces, phases, communication, and demo checks. Human instructions take precedence.
 

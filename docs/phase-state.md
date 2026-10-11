@@ -9,11 +9,13 @@ Maintained by Bhavya. No agent changes the phase on its own.
 | What works (verified live) | Camera → multi-face recognition → face tags; auto-enrollment (7 s voice intro → name + relationship → one-tap save); Who is this? speech; record → 3-bullet memory → save; compact last-talk card; phone over LAN (HTTPS) |
 | AI provider | Claude API `claude-haiku-5-5` (`AI_PROVIDER=anthropic`); Ollama/Gemini selectable |
 | Speech | ElevenLabs `scribe_v2` (STT) + `eleven_flash_v2_5` (TTS) |
-| Repository | https://github.com/bh-glitch/forget-not (private) |
+| Repository | https://github.com/bh-glitch/deja-view (renamed from forget-not on 2026-10-11; old links redirect) |
 
 ### 2026-10-11 update: déjà-view (merged from `bhavya/auto-conversation`)
 
-Product renamed **déjà-view** (repository, folders and packages keep the forget-not name).
+Product renamed **déjà-view**; the GitHub repository is now `bh-glitch/deja-view` (old links redirect).
+Existing clones keep working; to point yours at the new name:
+`git remote set-url origin https://github.com/bh-glitch/deja-view.git`. Package names are unchanged.
 Human-requested changes, recorded in `docs/decisions.md`:
 - Start screen: title + V logo; tapping the logo starts the camera with an intro animation.
   Header over the video: just the logo and name. Brand font Plus Jakarta Sans is bundled
@@ -48,7 +50,7 @@ Phone testing: `docs/setup.md` §7. New work: branch from `main`, open a PR, Bha
 Human decision, 2026-10-10: Ishan goes first with a simple layout so everyone builds on a
 shared UI. Everyone else waits until it is merged.
 
-Scope ([#1](https://github.com/bh-glitch/forget-not/issues/1)), inside Ishan's owned paths only:
+Scope ([#1](https://github.com/bh-glitch/deja-view/issues/1)), inside Ishan's owned paths only:
 - Single-page layout with clearly placed regions: camera video, identity card
   (name / relationship / latest cue / **Unknown** / **No saved conversation yet**),
   **Who is this?** button, microphone/**Listen** and **Record conversation** controls,
@@ -71,10 +73,10 @@ Scope ([#1](https://github.com/bh-glitch/forget-not/issues/1)), inside Ishan's o
 
 | Owner | Task | Handoff |
 |---|---|---|
-| Bhavya ([#4](https://github.com/bh-glitch/forget-not/issues/4)) | Real CPU vision/descriptor probe: load local `buffalo_l` with CPUExecutionProvider, confirm `normed_embedding` dimension (expected 512), time detection+recognition | `docs/agents/bhavya.md` |
-| Arnav ([#2](https://github.com/bh-glitch/forget-not/issues/2)) | SQLite transaction + restart probe on a temporary DB | `docs/agents/arnav.md` |
-| Vansh ([#3](https://github.com/bh-glitch/forget-not/issues/3)) | Verify Gemini model, ElevenLabs STT/TTS models and voice against the team account; check credits | `docs/agents/vansh.md` |
-| Ishan ([#1](https://github.com/bh-glitch/forget-not/issues/1)) | Fixture UI + camera → `/api/vision/recognize` proxy round trip (expect 503 MODEL_UNAVAILABLE until vision lands) | `docs/agents/ishan.md` |
+| Bhavya ([#4](https://github.com/bh-glitch/deja-view/issues/4)) | Real CPU vision/descriptor probe: load local `buffalo_l` with CPUExecutionProvider, confirm `normed_embedding` dimension (expected 512), time detection+recognition | `docs/agents/bhavya.md` |
+| Arnav ([#2](https://github.com/bh-glitch/deja-view/issues/2)) | SQLite transaction + restart probe on a temporary DB | `docs/agents/arnav.md` |
+| Vansh ([#3](https://github.com/bh-glitch/deja-view/issues/3)) | Verify Gemini model, ElevenLabs STT/TTS models and voice against the team account; check credits | `docs/agents/vansh.md` |
+| Ishan ([#1](https://github.com/bh-glitch/deja-view/issues/1)) | Fixture UI + camera → `/api/vision/recognize` proxy round trip (expect 503 MODEL_UNAVAILABLE until vision lands) | `docs/agents/ishan.md` |
 
 Interface corrections found in Phase 1 are requested in the task issue and published
 by Bhavya before Phase 2 starts.

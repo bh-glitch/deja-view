@@ -2,7 +2,7 @@
 
 ## Product
 
-déjà-view (formerly forget-not; the repository keeps that name) is an assistive familiar-person reminder prototype inspired by face blindness and dementia. A laptop webcam recognizes a previously enrolled friend or family member and shows their confirmed name, relationship, and a short reminder from their last saved conversation. The user can press **Who is this?** to hear the information aloud.
+déjà-view (formerly forget-not) is an assistive familiar-person reminder prototype inspired by face blindness and dementia. A laptop webcam recognizes a previously enrolled friend or family member and shows their confirmed name, relationship, and a short reminder from their last saved conversation. The user can press **Who is this?** to hear the information aloud.
 
 Build one working local demo in a 24-hour hackathon. Use consenting teammates, demo names, and fictional conversation details. Describe this as a prototype.
 
