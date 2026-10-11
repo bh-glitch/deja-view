@@ -25,7 +25,17 @@ export interface EnrollmentVoiceProps {
 const VOICE_DISCLOSURE_DETAIL =
   "Introduction audio is sent to ElevenLabs for transcription. The name is found by the configured AI (local AI keeps the text on this laptop; Gemini sends it to Google). Face images are never sent.";
 
-/** Compact voice status (human request 2026-10-10: no raw transcripts or model names on screen). */
+/** What was heard, as a fallback the user can read and copy from when the AI misses something. */
+function YouSaid({ transcript }: { transcript: string | null | undefined }) {
+  if (!transcript) return null;
+  return (
+    <p className="select-text text-[13px] leading-snug text-white/70">
+      You said: <span className="text-white/90">“{transcript}”</span>
+    </p>
+  );
+}
+
+/** Compact voice status: no model names; the heard words stay visible as a fallback. */
 function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
   const { state } = voice;
   const busy = state.kind === "transcribing" || state.kind === "understanding";
@@ -47,12 +57,30 @@ function VoicePanel({ voice }: { voice: EnrollmentVoiceProps }) {
         </div>
       )}
       {busy && <p className="text-white/80">Getting the name…</p>}
-      {state.kind === "heard" && <p className="text-emerald-200">✓ Got it. Check the name and save.</p>}
-      {state.kind === "no-name" && <p className="text-amber-200">{state.message}</p>}
+      {state.kind === "heard" && (
+        <>
+          <p className="text-emerald-200">
+            ✓ Got it. Check the name and save.
+            {!state.draft.relationship && (
+              <span className="block text-amber-200">No relationship heard. Type it or listen again.</span>
+            )}
+          </p>
+          <YouSaid transcript={state.transcript} />
+        </>
+      )}
+      {state.kind === "no-name" && (
+        <>
+          <p className="text-amber-200">{state.message}</p>
+          <YouSaid transcript={state.transcript} />
+        </>
+      )}
       {state.kind === "error" && (
-        <p role="alert" className="text-red-300">
-          {state.message}
-        </p>
+        <>
+          <p role="alert" className="text-red-300">
+            {state.message}
+          </p>
+          <YouSaid transcript={state.transcript} />
+        </>
       )}
       {(state.kind === "idle" || state.kind === "heard" || state.kind === "no-name" || state.kind === "error") && (
         <div className="flex flex-wrap items-center gap-2">

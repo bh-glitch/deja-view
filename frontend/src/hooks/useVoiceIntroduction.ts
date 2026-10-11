@@ -14,7 +14,9 @@ import { ApiClientError, type IntroductionDraft } from "@/lib/api-client";
 import { type AiProvider, draftIntroductionWithProvider } from "@/lib/audio/ai-drafts";
 import { transcribeAudio } from "@/lib/audio/speech-client";
 
-export const INTRODUCTION_WINDOW_MS = 8000;
+// 12 s: a name plus a relationship ("…and I'm Ishan's twin brother") often runs past 8 s.
+// Done stops it early, so short introductions don't wait (human feedback 2026-10-10).
+export const INTRODUCTION_WINDOW_MS = 12000;
 
 export type VoiceIntroductionState =
   | { kind: "idle" }
